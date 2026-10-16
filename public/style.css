@@ -1,3 +1,4 @@
+[hidden]{display:none!important}
 /* Layout: a classroom "board" — one question at centre stage, team score rail pinned to the bottom. Single deliberate dark look for projectors. */
 :root{
   --board:#123029; --board-2:#183d34; --line:#2c574c;
