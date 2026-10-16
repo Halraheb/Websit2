@@ -1,0 +1,20 @@
+{
+  "name": "khowaildiya-qudrat",
+  "version": "1.0.0",
+  "description": "موقع اختبار القدرات لمدرسة الخويلدية الثانوية مع قاعدة بيانات للطلاب والدرجات",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0"
+  }
+}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تسجيل الدخول · قدرات الخويلدية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>
+.auth{max-width:440px;margin:6vh auto 0;width:100%}
+.err{color:var(--wrong);min-height:1.2em;font-size:.95rem}
+.switch{color:var(--chalk-dim);font-size:.95rem;text-align:center}
+.switch button{background:none;border:0;color:var(--saffron);text-decoration:underline;font-size:inherit}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>مدرسة الخويلدية الثانوية</h1><small>اختبار القدرات · القسم الكمي</small></div>
+  </header>
+  <main class="auth">
+    <form class="panel" id="f">
+      <h3 id="ttl">تسجيل الدخول</h3>
+      <div class="field" id="nameF" hidden><label for="full_name">الاسم الكامل</label><input id="full_name" autocomplete="name"></div>
+      <div class="field"><label for="username">اسم المستخدم</label><input id="username" autocomplete="username" required dir="ltr"></div>
+      <div class="field" id="classF" hidden><label for="class_name">الصف / الشعبة</label><input id="class_name" placeholder="مثال: ثالث ثانوي ١"></div>
+      <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required dir="ltr"></div>
+      <div class="err" id="err" role="alert"></div>
+      <button class="primary" type="submit" id="go">دخول</button>
+      <div class="switch" id="sw"></div>
+    </form>
+  </main>
+</div>
+<script>
+let reg=false;
+const $=id=>document.getElementById(id);
+function paint(){
+  $("ttl").textContent=reg?"إنشاء حساب طالب":"تسجيل الدخول";
+  $("go").textContent=reg?"إنشاء الحساب":"دخول";
+  $("nameF").hidden=$("classF").hidden=!reg;
+  $("full_name").required=reg;
+  $("password").autocomplete=reg?"new-password":"current-password";
+  $("sw").innerHTML=reg?'لديك حساب؟ <button type="button">سجّل الدخول</button>':'طالب جديد؟ <button type="button">أنشئ حساباً</button>';
+  $("sw").querySelector("button").onclick=()=>{reg=!reg;$("err").textContent="";paint();};
+}
+$("f").onsubmit=async e=>{
+  e.preventDefault();$("err").textContent="";
+  const body={username:$("username").value.trim(),password:$("password").value};
+  if(reg){body.full_name=$("full_name").value.trim();body.class_name=$("class_name").value.trim();}
+  try{
+    const r=await fetch(reg?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){$("err").textContent=d.error||"حدث خطأ";return;}
+    location.href=d.user.role==="student"?"/":"/dashboard.html";
+  }catch(err){$("err").textContent="تعذّر الاتصال بالخادم";}
+};
+fetch("/api/me").then(r=>r.ok?r.json():null).then(d=>{if(d)location.href="/";});
+paint();
+</script>
+</body>
+</html>
