@@ -56,6 +56,7 @@ $("f").onsubmit=async e=>{
   }catch(err){$("err").textContent="تعذّر الاتصال بالخادم";}
 };
 fetch("/api/me").then(r=>r.ok?r.json():null).then(d=>{if(d)location.href="/";});
+fetch("/health").then(r=>r.json()).then(h=>{if(h.error)$("err").textContent="تنبيه للمشرف: "+h.error;}).catch(()=>{});
 paint();
 </script>
 </body>

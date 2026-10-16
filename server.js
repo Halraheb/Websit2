@@ -15,6 +15,11 @@ const PROD = process.env.NODE_ENV === "production";
 const app = express();
 app.set("trust proxy", 1);
 app.use(express.json({ limit: "20kb" }));
+
+// The site stays up while the database connects, so a missing/wrong DATABASE_URL shows a clear message instead of a crash loop.
+let dbError = "جارٍ الاتصال بقاعدة البيانات…";
+app.get("/health", (req, res) => res.json({ ok: true, db: dbError ? "error" : "ok", error: dbError || undefined }));
+app.use("/api", (req, res, next) => dbError ? res.status(503).json({ error: "قاعدة البيانات غير متصلة: " + dbError }) : next());
 app.use(cookieParser());
 
 const publicUser = (u) => ({ id: u.id, username: u.username, full_name: u.full_name, role: u.role, class_name: u.class_name });
@@ -164,7 +169,6 @@ app.delete("/api/admin/users/:id", auth, staffOnly, wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-app.get("/health", (req, res) => res.send("ok"));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use((err, req, res, next) => {
@@ -172,6 +176,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "خطأ في الخادم" });
 });
 
-init()
-  .then(() => app.listen(PORT, () => console.log(`الموقع يعمل على المنفذ ${PORT}`)))
-  .catch((e) => { console.error("فشل الاتصال بقاعدة البيانات:", e); process.exit(1); });
+app.listen(PORT, () => console.log(`الموقع يعمل على المنفذ ${PORT}`));
+
+(async function connect() {
+  try {
+    await init();
+    dbError = null;
+    console.log("تم الاتصال بقاعدة البيانات");
+  } catch (e) {
+    dbError = e.message;
+    console.error("فشل الاتصال بقاعدة البيانات:", e.message, "— إعادة المحاولة بعد 10 ثوانٍ");
+    setTimeout(connect, 10000);
+  }
+})();

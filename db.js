@@ -1,16 +1,12 @@
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 
-if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL غير مضبوط. أضف قاعدة PostgreSQL في Railway أو اضبط المتغير محلياً.");
-  process.exit(1);
-}
-
 // Railway's internal network doesn't use SSL; its public proxy URL does.
-const needsSsl = /sslmode=require/.test(process.env.DATABASE_URL) || process.env.PGSSL === "true";
+const needsSsl = /sslmode=require/.test(process.env.DATABASE_URL || "") || process.env.PGSSL === "true";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: needsSsl ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
 });
 
 const SCHEMA = `
@@ -36,6 +32,8 @@ CREATE INDEX IF NOT EXISTS results_user_idx ON results(user_id, created_at DESC)
 `;
 
 async function init() {
+  if (!process.env.DATABASE_URL)
+    throw new Error("المتغير DATABASE_URL غير مضبوط: أضف قاعدة PostgreSQL في Railway واربطها بالمتغير ${{Postgres.DATABASE_URL}}");
   await pool.query(SCHEMA);
   const username = (process.env.ADMIN_USERNAME || "admin").toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
