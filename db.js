@@ -34,6 +34,8 @@ CREATE INDEX IF NOT EXISTS results_user_idx ON results(user_id, created_at DESC)
 async function init() {
   if (!process.env.DATABASE_URL)
     throw new Error("المتغير DATABASE_URL غير مضبوط: أضف قاعدة PostgreSQL في Railway واربطها بالمتغير ${{Postgres.DATABASE_URL}}");
+  if (!/^postgres(ql)?:\/\//.test(process.env.DATABASE_URL))
+    throw new Error(`قيمة DATABASE_URL ليست رابط قاعدة بيانات (القيمة الحالية: "${process.env.DATABASE_URL.slice(0, 60)}"). احذفها وأضفها من Variables ← Add Reference ← Postgres ← DATABASE_URL`);
   await pool.query(SCHEMA);
   const username = (process.env.ADMIN_USERNAME || "admin").toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
