@@ -29,6 +29,15 @@ CREATE TABLE IF NOT EXISTS results (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS results_user_idx ON results(user_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS students (
+  id         SERIAL PRIMARY KEY,
+  full_name  TEXT NOT NULL,
+  class_name TEXT,
+  grade      REAL CHECK (grade >= 0 AND grade <= 100),
+  progress   INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+  notes      TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `;
 
 async function init() {
