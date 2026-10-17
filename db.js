@@ -46,20 +46,19 @@ async function init() {
   if (!/^postgres(ql)?:\/\//.test(process.env.DATABASE_URL))
     throw new Error(`قيمة DATABASE_URL ليست رابط قاعدة بيانات (القيمة الحالية: "${process.env.DATABASE_URL.slice(0, 60)}"). احذفها وأضفها من Variables ← Add Reference ← Postgres ← DATABASE_URL`);
   await pool.query(SCHEMA);
-  const username = (process.env.ADMIN_USERNAME || "admin").toLowerCase();
-  const password = process.env.ADMIN_PASSWORD;
-  const { rows } = await pool.query("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1");
-  if (!rows.length) {
-    if (!password) {
-      console.warn("لا يوجد مدير بعد: اضبط ADMIN_PASSWORD لإنشاء حساب المدير تلقائياً.");
-      return;
-    }
-    await pool.query(
-      "INSERT INTO users (username, full_name, password_hash, role) VALUES ($1, $2, $3, 'admin') ON CONFLICT (username) DO NOTHING",
-      [username, process.env.ADMIN_NAME || "مدير النظام", await bcrypt.hash(password, 10)]
-    );
-    console.log(`تم إنشاء حساب المدير: ${username}`);
+  // ADMIN_USERNAME / ADMIN_PASSWORD are the source of truth: create the admin, or reset its password and role, on every start.
+  const username = (process.env.ADMIN_USERNAME || "admin").trim().toLowerCase();
+  const password = (process.env.ADMIN_PASSWORD || "").trim();
+  if (!password) {
+    console.warn("ADMIN_PASSWORD غير مضبوط: لن يُنشأ أو يُحدّث حساب المدير.");
+    return;
   }
+  await pool.query(
+    `INSERT INTO users (username, full_name, password_hash, role) VALUES ($1, $2, $3, 'admin')
+     ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'admin'`,
+    [username, process.env.ADMIN_NAME || "مدير النظام", await bcrypt.hash(password, 10)]
+  );
+  console.log(`حساب المدير جاهز: ${username}`);
 }
 
 module.exports = { pool, init };
