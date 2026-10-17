@@ -28,6 +28,12 @@ tr:last-child td{border-bottom:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 .msg{min-height:1.2em;font-size:.95rem}
 .empty{color:var(--chalk-dim);padding:20px;text-align:center}
+.prog{display:flex;align-items:center;gap:8px;min-width:150px}
+.prog .bar{flex:1}
+.prog .bar i{transition:none}
+.prog small{color:var(--chalk-dim);white-space:nowrap}
+.field select,.field textarea{background:var(--board);border:1px solid var(--line);border-radius:8px;color:var(--chalk);padding:10px 12px;font:inherit;width:100%}
+.field input[type=range]{padding:0;accent-color:var(--saffron)}
 </style>
 </head>
 <body>
@@ -48,7 +54,7 @@ const fmt=d=>new Date(d).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"s
 const api=async(url,opt={})=>{const r=await fetch(url,{headers:{"Content-Type":"application/json"},...opt});
   if(r.status===401){location.href="/login.html";throw new Error("401");}
   const d=r.headers.get("content-type")?.includes("json")?await r.json():{};if(!r.ok)throw new Error(d.error||"حدث خطأ");return d;};
-let ME=null, TAB="results";
+let ME=null, TAB="students";
 
 function statsHTML(rows){
   const n=rows.length, avg=n?Math.round(rows.reduce((a,r)=>a+r.percent,0)/n):0, best=n?Math.max(...rows.map(r=>r.percent)):0;
@@ -72,9 +78,58 @@ async function student(){
 
 async function staff(){
   $("sub").textContent="لوحة المعلم";
-  $("view").innerHTML=`<div class="tabs"><button data-t="results" aria-pressed="${TAB==="results"}">درجات الطلاب</button><button data-t="users" aria-pressed="${TAB==="users"}">المستخدمون</button></div><div id="pane"></div>`;
+  $("view").innerHTML=`<div class="tabs"><button data-t="students" aria-pressed="${TAB==="students"}">سجل الطلاب</button><button data-t="results" aria-pressed="${TAB==="results"}">درجات الطلاب</button><button data-t="users" aria-pressed="${TAB==="users"}">المستخدمون</button></div><div id="pane"></div>`;
   $("view").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;staff();});
-  TAB==="results"?await staffResults():await staffUsers();
+  TAB==="students"?await staffStudents():TAB==="results"?await staffResults():await staffUsers();
+}
+
+// Manual roster: staff enter each student's name, grade (out of 100) and progress (0–100%).
+const PROG=p=>p>=100?"مكتمل":p>=75?"متقدم":p>=50?"جيد":p>=25?"قيد التقدم":"بداية";
+const progColor=p=>p>=75?"var(--right)":p>=40?"var(--saffron)":"var(--wrong)";
+let SQ={q:"",cls:""}, EDIT=null;
+async function staffStudents(){
+  const {students}=await api("/api/admin/students");
+  const classes=[...new Set(students.map(s=>s.class_name).filter(Boolean))].sort();
+  const e=EDIT&&students.find(s=>s.id===EDIT)||null;
+  $("pane").innerHTML=`<div style="display:flex;flex-direction:column;gap:14px">
+  <form class="panel" id="sf"><h3>${e?"تعديل بيانات الطالب":"إضافة طالب"}</h3><div class="grid2">
+    <div class="field"><label>اسم الطالب</label><input name="full_name" required maxlength="80" value="${esc(e?.full_name)}"></div>
+    <div class="field"><label>الصف / الشعبة</label><input name="class_name" maxlength="40" list="clsList" value="${esc(e?.class_name)}"><datalist id="clsList">${classes.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div>
+    <div class="field"><label>الدرجة (من 100)</label><input name="grade" type="number" min="0" max="100" step="0.5" dir="ltr" value="${e?.grade??""}"></div>
+    <div class="field"><label>مستوى التقدم: <b id="pv"></b></label><input name="progress" type="range" min="0" max="100" step="5" value="${e?.progress??0}"></div>
+    <div class="field" style="grid-column:1/-1"><label>ملاحظات</label><input name="notes" maxlength="300" value="${esc(e?.notes)}"></div>
+  </div><div class="msg" id="sMsg"></div>
+  <div class="row"><button class="primary" type="submit">${e?"حفظ التعديل":"إضافة الطالب"}</button>${e?'<button class="btn" type="button" id="cancel">إلغاء</button>':""}</div></form>
+  <div class="tools"><input id="sq" placeholder="ابحث باسم الطالب" value="${esc(SQ.q)}">
+   <select id="scls"><option value="">كل الصفوف</option>${classes.map(c=>`<option ${c===SQ.cls?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
+  <div id="slist" style="display:flex;flex-direction:column;gap:14px"></div></div>`;
+  const f=$("sf"), pv=()=>$("pv").textContent=`${f.progress.value}% · ${PROG(+f.progress.value)}`;
+  f.progress.oninput=pv; pv();
+  if(e){f.scrollIntoView({block:"start"});$("cancel").onclick=()=>{EDIT=null;staffStudents();};}
+  f.onsubmit=async ev=>{ev.preventDefault();const fd=Object.fromEntries(new FormData(f));
+    try{await api("/api/admin/students"+(e?"/"+e.id:""),{method:e?"PUT":"POST",body:JSON.stringify(fd)});EDIT=null;staffStudents();}
+    catch(err){$("sMsg").style.color="var(--wrong)";$("sMsg").textContent=err.message;}};
+  const draw=()=>{
+    const q=SQ.q.toLowerCase();
+    const rows=students.filter(s=>(!SQ.cls||s.class_name===SQ.cls)&&(!q||s.full_name.toLowerCase().includes(q)));
+    const graded=rows.filter(s=>s.grade!=null), avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):0;
+    $("slist").innerHTML=`<div class="stats"><div class="stat"><span>عدد الطلاب</span><b>${rows.length}</b></div>
+      <div class="stat"><span>متوسط الدرجات</span><b>${graded.length?avg(graded.map(s=>s.grade)):"—"}</b></div>
+      <div class="stat"><span>متوسط التقدم</span><b>${avg(rows.map(s=>s.progress))}%</b></div></div>`+
+      (rows.length?`<div class="tbl"><table><thead><tr><th>الطالب</th><th>الصف</th><th>الدرجة</th><th>مستوى التقدم</th><th>ملاحظات</th><th></th></tr></thead><tbody>
+      ${rows.map(s=>`<tr><td>${esc(s.full_name)}</td><td>${esc(s.class_name||"—")}</td>
+        <td class="pct" style="color:${s.grade==null?"inherit":pctColor(s.grade)}">${s.grade==null?"—":s.grade}</td>
+        <td><div class="prog"><div class="bar"><i style="width:${s.progress}%;background:${progColor(s.progress)}"></i></div><small>${s.progress}% · ${PROG(s.progress)}</small></div></td>
+        <td style="color:var(--chalk-dim)">${esc(s.notes||"")}</td>
+        <td style="white-space:nowrap"><button class="mini" data-ed="${s.id}">تعديل</button> <button class="mini danger" data-dels="${s.id}">حذف</button></td></tr>`).join("")}
+      </tbody></table></div>`:`<div class="tbl"><div class="empty">لا يوجد طلاب بعد. أضف أول طالب من النموذج أعلاه.</div></div>`);
+    $("slist").querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{EDIT=+b.dataset.ed;staffStudents();});
+    $("slist").querySelectorAll("[data-dels]").forEach(b=>b.onclick=async()=>{if(!confirm("حذف هذا الطالب من السجل؟"))return;
+      try{await api("/api/admin/students/"+b.dataset.dels,{method:"DELETE"});if(EDIT===+b.dataset.dels)EDIT=null;staffStudents();}catch(err){alert(err.message);}});
+  };
+  $("sq").oninput=ev=>{SQ.q=ev.target.value;draw();};
+  $("scls").onchange=ev=>{SQ.cls=ev.target.value;draw();};
+  draw();
 }
 
 let RQ={q:"",cls:""};
