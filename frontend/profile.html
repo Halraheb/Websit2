@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الملف الشخصي · قدرات الخويلدية</title>
+<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="nav" id="nav"></header>
+<main class="app" id="view"><p class="dim">جارٍ التحميل…</p></main>
+<script src="/common.js"></script>
+<script src="/questions.js"></script>
+<script src="/analytics.js"></script>
+<script>
+// Student profile: own profile for students, or any student's via ?id= for staff.
+const pctColor=p=>p>=90?"var(--ok)":p>=60?"var(--warn)":"var(--bad)";
+
+function heroHTML(p){
+  const s=p.student, L=p.level;
+  const toNext=L.to==null?100:Math.round((L.xp-L.from)/(L.to-L.from)*100);
+  return `<section class="hero">
+    <div class="big-avatar" aria-hidden="true">${esc(initials(s.full_name))}</div>
+    <div><h1>${esc(s.full_name)}</h1>
+      <div class="sub">${[s.stage,s.class_name&&"الصف "+s.class_name,"@"+s.username].filter(Boolean).map(esc).join(" · ")}</div>
+      <div class="sub">عضو منذ ${fmtDay(s.created_at)}</div></div>
+    <div class="lvl"><small>المستوى ${L.number}</small><br><b>${esc(L.title)}</b>
+      <div class="bar"><i style="width:${toNext}%"></i></div>
+      <small><b dir="ltr" style="font-size:1rem">${L.xp.toLocaleString(LOCALE)} XP</b><br>${L.to==null?"أعلى مستوى":`باقٍ ${(L.to-L.xp).toLocaleString(LOCALE)} للمستوى التالي (${esc(L.next_title)})`}</small></div>
+  </section>`;
+}
+
+function statsHTML(st){
+  const v=x=>x==null?"—":x+"%";
+  return `<div class="stats">
+    <div class="stat"><span>الاختبارات المنجزة</span><b>${st.attempts}</b></div>
+    <div class="stat"><span>متوسط الدرجة</span><b>${v(st.avg)}</b></div>
+    <div class="stat"><span>أفضل درجة</span><b>${v(st.best)}</b></div>
+    <div class="stat"><span>آخر درجة</span><b>${v(st.last)}</b></div>
+    <div class="stat"><span>إجابات صحيحة</span><b>${st.correct}<small class="dim" style="font-size:.9rem"> / ${st.answered}</small></b></div>
+    <div class="stat"><span>أطول سلسلة أيام</span><b>${st.streak} 🔥</b></div></div>`;
+}
+
+function achievementsHTML(list){
+  const earned=list.filter(a=>a.earned_at).sort((a,b)=>new Date(b.earned_at)-new Date(a.earned_at));
+  const locked=list.filter(a=>!a.earned_at).sort((a,b)=>b.progress/b.goal-a.progress/a.goal);
+  return `<section class="card"><h3>🏅 الإنجازات <small class="dim">${earned.length} من ${list.length}</small></h3>
+    <div class="badges">${[...earned,...locked].map(badgeHTML).join("")}</div></section>`;
+}
+
+function recentHTML(rows){
+  if(!rows.length)return "";
+  return `<section class="card"><h3>آخر الاختبارات</h3><div class="tbl"><table><thead><tr><th>التاريخ</th><th>الدرجة</th><th>النسبة</th><th>المستوى</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${fmtDate(r.created_at)}</td><td>${r.score} / ${r.total}</td><td class="pct" style="color:${pctColor(r.percent)}">${r.percent}%</td><td>${LEVELS[r.level]||"—"}</td></tr>`).join("")}
+  </tbody></table></div></section>`;
+}
+
+(async()=>{
+  const id=new URLSearchParams(location.search).get("id");
+  const me=await boot(id?"dashboard":"profile");
+  if(!id&&me.role!=="student"){location.href="/dashboard.html";return;}
+  try{
+    const p=await api(id?"/api/admin/profile/"+encodeURIComponent(id):"/api/profile/me");
+    document.title=`${p.student.full_name} · قدرات الخويلدية`;
+    $("view").innerHTML=`${id?'<div><a class="ghost" href="/dashboard.html">→ رجوع للوحة المعلم</a></div>':""}
+      ${heroHTML(p)}
+      ${statsHTML(p.stats)}
+      ${p.stats.attempts?"":`<section class="card" style="align-items:flex-start"><h3>ابدأ رحلتك</h3><p class="dim" style="margin:0">لم ${id?"يُنهِ هذا الطالب":"تُنهِ"} أي اختبار فردي بعد. بعد أول اختبار تظهر هنا الدرجات ونقاط القوة والضعف وتبدأ الإنجازات.</p>${id?"":'<a class="primary" href="/" style="text-decoration:none">ابدأ اختباراً الآن</a>'}</section>`}
+      ${achievementsHTML(p.achievements)}
+      <div class="page-head"><div><h2 style="font-size:1.4rem">نقاط القوة والضعف</h2><p>دقة الإجابات في كل مهارة من مهارات القسم الكمي</p></div></div>
+      ${renderAnalytics(p.analytics,{scope:"student",showKpis:false})}
+      ${recentHTML(p.recent)}`;
+  }catch(e){$("view").innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`;}
+})();
+</script>
+</body>
+</html>

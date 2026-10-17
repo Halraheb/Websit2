@@ -5,7 +5,6 @@ const DEFAULT_NAMES=["الفريق الأول","الفريق الثاني","ال
 let S={screen:"setup",mode:"solo",player:"",teamCount:2,count:30,order:[],names:DEFAULT_NAMES.slice(),secs:60,teams:[],idx:0,picked:{},revealed:{},awarded:{},left:60,paused:false};
 let tick=null, audio=null;
 const view=document.getElementById("view"), meta=document.getElementById("meta");
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ar=n=>String(n);
 
 function beep(){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=520;g.gain.value=.15;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.6);o.stop(audio.currentTime+.6);}catch(e){}}
@@ -17,10 +16,10 @@ function stopTimer(){if(tick){clearInterval(tick);tick=null;}}
 function updateClock(){const c=document.getElementById("clock"),b=document.getElementById("bar");if(!c)return;const low=S.left<=10;c.textContent=ar(S.left);c.classList.toggle("low",low);b.classList.toggle("low",low);b.firstElementChild.style.width=(S.left/S.secs*100)+"%";const p=document.getElementById("pause");if(p)p.textContent=S.paused?"استئناف":"إيقاف مؤقت";}
 
 function renderMeta(){
-  if(S.screen==="setup"){meta.innerHTML=`<span class="chip">بنك ${QT} سؤالاً</span>`+userBar();bindUserBar();return;}
+  if(S.screen==="setup"){meta.innerHTML=`<span class="chip">بنك ${QT} سؤالاً</span>`;return;}
   const cq=Q[S.order[Math.min(S.idx,N()-1)]];
-  meta.innerHTML=`<span class="chip" style="color:${LEVEL_COLORS[cq.d]};border-color:${LEVEL_COLORS[cq.d]}">${LEVELS[cq.d]}</span><span class="chip">${SECTIONS[cq.s]}</span><button class="ghost" id="restart" type="button">إعادة الإعداد</button>`+userBar();
-  document.getElementById("restart").onclick=()=>{stopTimer();S.screen="setup";render();};bindUserBar();
+  meta.innerHTML=`<span class="chip" style="color:${LEVEL_COLORS[cq.d]};border-color:${LEVEL_COLORS[cq.d]}">${LEVELS[cq.d]}</span><span class="chip">${SECTIONS[cq.s]}</span><button class="ghost" id="restart" type="button">إعادة الإعداد</button>`;
+  document.getElementById("restart").onclick=()=>{stopTimer();S.screen="setup";render();};
 }
 
 function renderSetup(){
@@ -28,7 +27,7 @@ function renderSetup(){
   const n=S.teamCount;
   view.innerHTML=`
   <section class="intro">
-    <h2>من يحسم سؤال القدرات أولاً؟</h2>
+    <h2>تدرّب على القدرات <em>وارتقِ بمستواك</em></h2>
     <p>بنك من ${QT} سؤالاً في ثلاثة أقسام: الحساب والجبر، والهندسة والإحصاء، والمقارنة. في الوضع الفردي يجيب الطالب بنفسه، فتظهر النتيجة فوراً وتُحسب درجته تلقائياً. وفي وضع الفرق يدير المعلم الأسئلة ويمنح النقاط.</p>
     <dl class="credits">
       <dt>مدير المدرسة</dt><dd>رمضان حيدر الرمضان</dd>
@@ -144,6 +143,7 @@ function renderEnd(){
     <h2>${ar(top)} من ${ar(N())}</h2>
     <div class="chip" style="font-size:1.1rem">${ar(pct)}% · ${grade}</div>
     <div class="keys" id="saveMsg" style="display:block">${S.saved?"تم حفظ الدرجة في سجلك ✓":"جارٍ حفظ الدرجة…"}</div>
+    <div class="badges" id="newBadges">${(S.newBadges||[]).map(badgeHTML).join("")}</div>
     ${miss.length?`<div class="rank"><div style="color:var(--chalk-dim);font-size:1rem">الأسئلة التي تحتاج مراجعة (${ar(miss.length)})</div>${miss.map(x=>`<div style="font-size:1rem"><span>السؤال ${ar(x.i+1)}: ${x.q.s===3?esc(x.q.v1+" ↔ "+x.q.v2):esc(x.q.t)}</span><b style="color:var(--right);white-space:nowrap;margin-inline-start:10px">${LETTERS[x.q.a]}</b></div>`).join("")}</div>`:""}
     <div class="row"><button class="btn" id="back" type="button">→ الرجوع للأسئلة</button><button class="btn go" id="again" type="button">جولة جديدة</button></div>`;
   } else view.innerHTML=`
@@ -165,29 +165,24 @@ document.addEventListener("keydown",e=>{
   else if(["1","2","3","4"].includes(e.key)&&!S.revealed[S.idx]){if(S.mode==="solo")answerSolo(+e.key-1);else{S.picked[S.idx]=+e.key-1;render();}}
 });
 
-// ---- ربط الموقع بقاعدة البيانات: المستخدم الحالي وحفظ الدرجات ----
-let ME=null;
-function userBar(){
-  if(!ME)return "";
-  const staff=ME.role!=="student";
-  return `<span class="chip">${esc(ME.full_name)}</span><a class="ghost" href="/dashboard.html">${staff?"لوحة المعلم":"درجاتي"}</a><button class="ghost" id="logout" type="button">خروج</button>`;
-}
-function bindUserBar(){const b=document.getElementById("logout");if(b)b.onclick=async()=>{stopTimer();await fetch("/api/logout",{method:"POST"});location.href="/login.html";};}
+// ---- ربط الموقع بقاعدة البيانات: حفظ الدرجة وإظهار الإنجازات الجديدة ----
 async function saveResult(score){
-  if(S.saved||S.saving)return; S.saving=true;
+  if(S.saved||S.saving)return; S.saving=true; S.newBadges=[];
   try{
     const r=await fetch("/api/results",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({score,total:N(),level:S.level||0,
         answers:S.order.map((qi,i)=>({q:qi,s:Q[qi].s,d:Q[qi].d,k:Q[qi].k,p:S.picked[i]??null,ok:S.picked[i]===Q[qi].a}))})});
     S.saved=r.ok;
+    if(r.ok)S.newBadges=(await r.json()).new_achievements||[];
   }catch(e){S.saved=false;}
   S.saving=false;
   const m=document.getElementById("saveMsg");
-  if(m)m.textContent=S.saved?"تم حفظ الدرجة في سجلك ✓":"تعذّر حفظ الدرجة، تحقق من الاتصال.";
+  if(m)m.innerHTML=S.saved?`تم حفظ الدرجة في سجلك ✓ · <a href="/profile.html">عرض ملفي وإنجازاتي</a>`:"تعذّر حفظ الدرجة، تحقق من الاتصال.";
+  const nb=document.getElementById("newBadges");
+  if(nb&&S.newBadges.length){
+    nb.innerHTML=`<h3 style="grid-column:1/-1;text-align:center">🏅 إنجازات جديدة!</h3>`+S.newBadges.map(badgeHTML).join("");
+    const xp=S.newBadges.reduce((t,a)=>t+a.xp,0);
+    toast(`<span class="ico">${S.newBadges[0].icon}</span><div><b>${S.newBadges.length>1?`${S.newBadges.length} إنجازات جديدة`:"إنجاز جديد: "+esc(S.newBadges[0].title)}</b><br><small class="dim" dir="ltr">+${xp} XP</small></div>`);
+  }
 }
-(async()=>{
-  try{const r=await fetch("/api/me");if(!r.ok){location.href="/login.html";return;}ME=(await r.json()).user;}
-  catch(e){location.href="/login.html";return;}
-  if(!S.player)S.player=ME.full_name;
-  render();
-})();
+boot("quiz").then(me=>{if(!S.player)S.player=me.full_name;render();}).catch(()=>{});

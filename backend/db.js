@@ -52,6 +52,12 @@ CREATE TABLE IF NOT EXISTS students (
   notes      TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS achievements (
+  user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code      TEXT NOT NULL,
+  earned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, code)
+);
 `;
 
 async function init() {

@@ -3,79 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>لوحة الدرجات · قدرات الخويلدية</title>
+<title>لوحة المعلم · قدرات الخويلدية</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="/style.css">
-<style>
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.stat{background:var(--board-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.stat span{display:block;color:var(--chalk-dim);font-size:.85rem}
-.stat b{font-family:var(--display);font-size:1.8rem;font-variant-numeric:tabular-nums}
-.tabs{display:flex;gap:8px;flex-wrap:wrap}
-.tabs button{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 16px}
-.tabs button[aria-pressed="true"]{background:var(--saffron);color:var(--board);border-color:var(--saffron);font-weight:700}
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;min-width:560px}
-th,td{padding:10px 12px;text-align:start;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
-th{color:var(--chalk-dim);font-weight:500;font-size:.9rem;background:var(--board-2)}
-tr:last-child td{border-bottom:0}
-.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.tools input,.tools select,.panel select{background:var(--board);border:1px solid var(--line);border-radius:8px;color:var(--chalk);padding:8px 10px;font:inherit}
-.pct{font-weight:700}
-.mini{background:transparent;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.85rem}
-.mini.danger{color:var(--wrong);border-color:var(--wrong)}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-.msg{min-height:1.2em;font-size:.95rem}
-.empty{color:var(--chalk-dim);padding:20px;text-align:center}
-.prog{display:flex;align-items:center;gap:8px;min-width:150px}
-.prog .bar{flex:1}
-.prog .bar i{transition:none}
-.prog small{color:var(--chalk-dim);white-space:nowrap}
-.field select,.field textarea{background:var(--board);border:1px solid var(--line);border-radius:8px;color:var(--chalk);padding:10px 12px;font:inherit;width:100%}
-.field input[type=range]{padding:0;accent-color:var(--saffron)}
-.card{background:var(--board-2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.card h3{margin:0;font-size:1.05rem;color:var(--saffron)}
-.card h3 small{font-weight:400;font-size:.85rem;margin-inline-start:6px}
-.card.good h3{color:var(--right)} .card.bad h3{color:var(--wrong)}
-.card ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.card li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:6px}
-.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.dim{color:var(--chalk-dim)} .note{margin:-6px 0 0;font-size:.85rem}
-.tip{margin:0;font-size:.95rem}
-.hbars{display:grid;gap:10px}
-.hrow{display:grid;grid-template-columns:minmax(120px,1.3fr) 2fr minmax(92px,auto);gap:10px;align-items:center}
-.hl{display:flex;flex-direction:column;font-size:.95rem;min-width:0}
-.hl small,.hv small{color:var(--chalk-dim);font-size:.75rem}
-.hbar{height:10px;background:var(--board);border-radius:5px;overflow:hidden}
-.hbar i{display:block;height:100%;border-radius:4px}
-.hv{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}
-.link{background:none;border:0;color:var(--chalk);text-decoration:underline;text-decoration-color:var(--line);padding:0;font:inherit;text-align:start}
-.link:hover{color:var(--saffron)}
-.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-@media (max-width:560px){.hrow{grid-template-columns:1fr auto}.hrow .hbar{grid-column:1/-1;grid-row:2}}
-</style>
+<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="brand"><h1>مدرسة الخويلدية الثانوية</h1><small id="sub">لوحة الدرجات</small></div>
-    <div class="meta"><span class="chip" id="who"></span><a class="ghost" href="/">الاختبار</a><button class="ghost" id="logout" type="button">خروج</button></div>
-  </header>
-  <main id="view" style="display:flex;flex-direction:column;gap:18px"></main>
-</div>
+<header class="nav" id="nav"></header>
+<main class="app">
+  <div class="page-head"><div><h1>لوحة المعلم</h1><p>التحليلات، سجل الطلاب، الدرجات، وإدارة المستخدمين</p></div></div>
+  <div id="view" class="stack"></div>
+</main>
+<script src="/common.js"></script>
 <script src="/questions.js"></script>
 <script src="/analytics.js"></script>
 <script>
-const $=id=>document.getElementById(id);
-const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const ROLES={student:"طالب",teacher:"معلم",admin:"مدير النظام"};
 const pctColor=p=>p>=90?"var(--right)":p>=60?"var(--saffron)":"var(--wrong)";
-const fmt=d=>new Date(d).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"});
-const api=async(url,opt={})=>{const r=await fetch(url,{headers:{"Content-Type":"application/json"},...opt});
-  if(r.status===401){location.href="/login.html";throw new Error("401");}
-  const d=r.headers.get("content-type")?.includes("json")?await r.json():{};if(!r.ok)throw new Error(d.error||"حدث خطأ");return d;};
-let ME=null, TAB="analytics";
+const fmt=fmtDate;
+let TAB="analytics";
 
 function statsHTML(rows){
   const n=rows.length, avg=n?Math.round(rows.reduce((a,r)=>a+r.percent,0)/n):0, best=n?Math.max(...rows.map(r=>r.percent)):0;
@@ -91,15 +37,7 @@ function resultsTable(rows,withStudent){
   </tbody></table></div>`;
 }
 
-async function student(){
-  $("sub").textContent="درجاتي";
-  const [{results},an]=await Promise.all([api("/api/results/me"),api("/api/analytics/me")]);
-  $("view").innerHTML=`<h2 style="font-family:var(--display);margin:0">مهاراتي ونقاط القوة والضعف</h2>${renderAnalytics(an,{scope:"student"})}
-  <h2 style="font-family:var(--display);margin:0">سجل درجاتي</h2>${resultsTable(results,false)}`;
-}
-
 async function staff(){
-  $("sub").textContent="لوحة المعلم";
   $("view").innerHTML=`<div class="tabs"><button data-t="analytics" aria-pressed="${TAB==="analytics"}">التحليلات</button><button data-t="students" aria-pressed="${TAB==="students"}">سجل الطلاب</button><button data-t="results" aria-pressed="${TAB==="results"}">درجات الطلاب</button><button data-t="users" aria-pressed="${TAB==="users"}">المستخدمون</button></div><div id="pane"></div>`;
   $("view").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;staff();});
   TAB==="analytics"?await staffAnalytics():TAB==="students"?await staffStudents():TAB==="results"?await staffResults():await staffUsers();
@@ -166,8 +104,8 @@ async function staffAnalytics(){
   $("pane").innerHTML=`<div style="display:flex;flex-direction:column;gap:14px">
     <div class="tools"><select id="ast"><option value="all">كل المراحل</option>${STAGES.map(s=>`<option ${s===AQ.stage?"selected":""}>${s}</option>`).join("")}<option value="" ${AQ.stage===""?"selected":""}>مرحلة غير محددة</option></select>
     <select id="asu"><option value="">كل طلاب النطاق (${studs.length})</option>${studs.map(u=>`<option value="${u.id}" ${String(u.id)===AQ.user?"selected":""}>${esc(u.full_name)}${u.class_name?" · "+esc(u.class_name):""}</option>`).join("")}</select>
-    ${AQ.user?'<button class="ghost" id="aback" type="button">→ رجوع للنطاق</button>':""}</div>
-    <h2 style="font-family:var(--display);margin:0;font-size:1.4rem">${title}</h2>
+    ${AQ.user?'<button class="ghost" id="aback" type="button">→ رجوع للنطاق</button> <a class="ghost" href="/profile.html?id='+AQ.user+'">الملف الشخصي والإنجازات</a>':""}</div>
+    <h2 style="font-size:1.35rem">${title}</h2>
     ${renderAnalytics(d,{scope:AQ.user?"student":"group"})}</div>`;
   $("ast").onchange=e=>{AQ.stage=e.target.value;AQ.user="";staffAnalytics();};
   $("asu").onchange=e=>{AQ.user=e.target.value;staffAnalytics();};
@@ -206,10 +144,10 @@ async function staffUsers(){
     <div class="field"><label>المرحلة</label><select name="stage"><option value="">—</option>${STAGES.map(s=>`<option>${s}</option>`).join("")}</select></div>
     <div class="field"><label>الصلاحية</label><select name="role"><option value="student">طالب</option>${admin?'<option value="teacher">معلم</option><option value="admin">مدير النظام</option>':""}</select></div>
   </div><div class="msg" id="addMsg"></div><button class="primary" type="submit">إضافة</button></form>
-  <div class="tbl"><table><thead><tr><th>الاسم</th><th>المستخدم</th><th>المرحلة</th><th>الصف</th><th>الصلاحية</th><th>المحاولات</th><th>أفضل نسبة</th><th></th></tr></thead><tbody>
-  ${users.map(u=>`<tr><td>${esc(u.full_name)}</td><td dir="ltr" style="text-align:end">${esc(u.username)}</td>
+  <div class="tbl"><table><thead><tr><th>الاسم</th><th>المستخدم</th><th>المرحلة</th><th>الصف</th><th>الصلاحية</th><th>المحاولات</th><th>أفضل نسبة</th><th>الإنجازات</th><th></th></tr></thead><tbody>
+  ${users.map(u=>`<tr><td>${u.role==="student"?`<a class="link" href="/profile.html?id=${u.id}">${esc(u.full_name)}</a>`:esc(u.full_name)}</td><td dir="ltr" style="text-align:end">${esc(u.username)}</td>
     <td>${u.role==="student"&&u.id!==ME.id?`<select class="mini" data-stage="${u.id}"><option value="">—</option>${STAGES.map(s=>`<option ${s===u.stage?"selected":""}>${s}</option>`).join("")}</select>`:esc(u.stage||"—")}</td><td>${esc(u.class_name||"—")}</td><td>${ROLES[u.role]}</td>
-    <td>${u.attempts}</td><td>${u.best==null?"—":u.best+"%"}</td>
+    <td>${u.attempts}</td><td>${u.best==null?"—":u.best+"%"}</td><td>${u.role==="student"?"🏅 "+u.badges:"—"}</td>
     <td style="white-space:nowrap">${u.id!==ME.id&&(admin||u.role==="student")?`<button class="mini" data-pw="${u.id}">كلمة مرور</button> <button class="mini danger" data-del="${u.id}">حذف</button>`:""}</td></tr>`).join("")}
   </tbody></table></div></div>`;
   $("add").onsubmit=async e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(e.target));
@@ -223,12 +161,7 @@ async function staffUsers(){
     try{await api("/api/admin/users/"+b.dataset.del,{method:"DELETE"});staffUsers();}catch(err){alert(err.message);}});
 }
 
-$("logout").onclick=async()=>{await fetch("/api/logout",{method:"POST"});location.href="/login.html";};
-(async()=>{
-  ME=(await api("/api/me")).user;
-  $("who").textContent=`${ME.full_name} · ${ROLES[ME.role]}`;
-  ME.role==="student"?student():staff();
-})();
+boot("dashboard",{staffOnly:true}).then(staff).catch(()=>{});
 </script>
 </body>
 </html>

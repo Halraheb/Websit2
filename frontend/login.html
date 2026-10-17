@@ -4,44 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>تسجيل الدخول · قدرات الخويلدية</title>
+<script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="/style.css">
-<style>
-.auth{max-width:440px;margin:6vh auto 0;width:100%}
-.err{color:var(--wrong);min-height:1.2em;font-size:.95rem}
-.switch{color:var(--chalk-dim);font-size:.95rem;text-align:center}
-.switch button{background:none;border:0;color:var(--saffron);text-decoration:underline;font-size:inherit}
-</style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="brand"><h1>مدرسة الخويلدية الثانوية</h1><small>اختبار القدرات · القسم الكمي</small></div>
-  </header>
-  <main class="auth">
+<header class="nav"><div class="nav-in"><a class="logo" href="/"><i>خ</i><span><b>قدرات الخويلدية</b><small>مدرسة الخويلدية الثانوية</small></span></a></div></header>
+<main class="app">
+  <div class="auth">
+    <section class="pitch">
+      <h1>منصة التدريب على اختبار القدرات</h1>
+      <p>تدرّب على القسم الكمي، وتابع درجاتك وتطوّر مستواك، واكتشف نقاط قوتك وضعفك في كل مهارة، واجمع الإنجازات.</p>
+      <ul class="feats">
+        <li><span>📝</span>198 سؤالاً في الحساب والهندسة والمقارنة</li>
+        <li><span>📊</span>تحليل نقاط القوة والضعف لكل مهارة</li>
+        <li><span>🏅</span>إنجازات ومستويات وخبرة (XP) مع كل اختبار</li>
+      </ul>
+    </section>
     <form class="panel" id="f">
-      <h3 id="ttl">تسجيل الدخول</h3>
+      <h2 id="ttl" style="font-size:1.4rem">تسجيل الدخول</h2>
       <div class="field" id="nameF" hidden><label for="full_name">الاسم الكامل</label><input id="full_name" autocomplete="name"></div>
       <div class="field"><label for="username">اسم المستخدم</label><input id="username" autocomplete="username" required dir="ltr"></div>
-      <div class="field" id="stageF" hidden><label for="stage">المرحلة</label><select id="stage" style="background:var(--board);border:1px solid var(--line);border-radius:8px;color:var(--chalk);padding:10px 12px;font:inherit"><option value="">اختر المرحلة</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></div>
-      <div class="field" id="classF" hidden><label for="class_name">الصف / الشعبة</label><input id="class_name" placeholder="مثال: ١ أو أ"></div>
+      <div class="grid2" id="schoolF" hidden>
+        <div class="field"><label for="stage">المرحلة</label><select id="stage"><option value="">اختر المرحلة</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></div>
+        <div class="field"><label for="class_name">الصف / الشعبة</label><input id="class_name" placeholder="مثال: ١ أو أ"></div>
+      </div>
       <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required dir="ltr"></div>
       <div class="err" id="err" role="alert"></div>
       <button class="primary" type="submit" id="go">دخول</button>
       <div class="switch" id="sw"></div>
     </form>
-  </main>
-</div>
+  </div>
+</main>
+<footer class="foot"><span>مدير المدرسة: رمضان حيدر الرمضان</span><span>إعداد: الأستاذ حسن الراهب</span></footer>
 <script>
 let reg=false;
 const $=id=>document.getElementById(id);
+const home=u=>u.role==="student"?"/":"/dashboard.html";
 function paint(){
   $("ttl").textContent=reg?"إنشاء حساب طالب":"تسجيل الدخول";
   $("go").textContent=reg?"إنشاء الحساب":"دخول";
-  $("nameF").hidden=$("classF").hidden=$("stageF").hidden=!reg;
-  $("stage").required=reg;
-  $("full_name").required=reg;
+  $("nameF").hidden=$("schoolF").hidden=!reg;
+  $("stage").required=$("full_name").required=reg;
   $("password").autocomplete=reg?"new-password":"current-password";
   $("sw").innerHTML=reg?'لديك حساب؟ <button type="button">سجّل الدخول</button>':'طالب جديد؟ <button type="button">أنشئ حساباً</button>';
   $("sw").querySelector("button").onclick=()=>{reg=!reg;$("err").textContent="";paint();};
@@ -54,10 +59,10 @@ $("f").onsubmit=async e=>{
     const r=await fetch(reg?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     const d=await r.json();
     if(!r.ok){$("err").textContent=d.error||"حدث خطأ";return;}
-    location.href=d.user.role==="student"?"/":"/dashboard.html";
+    location.href=home(d.user);
   }catch(err){$("err").textContent="تعذّر الاتصال بالخادم";}
 };
-fetch("/api/me").then(r=>r.ok?r.json():null).then(d=>{if(d)location.href="/";});
+fetch("/api/me").then(r=>r.ok?r.json():null).then(d=>{if(d)location.href=home(d.user);});
 fetch("/health").then(r=>r.json()).then(h=>{if(h.error)$("err").textContent="تنبيه للمشرف: "+h.error;}).catch(()=>{});
 paint();
 </script>

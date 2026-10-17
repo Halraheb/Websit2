@@ -17,16 +17,16 @@ function barRow(label,r,sub){
     <span class="hv"><b>${p}%</b><small>${b.i} ${b.t} · ${r.answered}</small></span></div>`;
 }
 
-function renderAnalytics(d,{scope}){
+function renderAnalytics(d,{scope,showKpis=true}){
   const solo=scope==="student";
   const total=d.bySkill.reduce((a,r)=>a+r.answered,0), right=d.bySkill.reduce((a,r)=>a+r.correct,0);
-  if(!total) return `${kpis(d,solo,0,0)}<div class="tbl"><div class="empty">لا توجد إجابات مسجلة بعد في هذا النطاق. تظهر التحليلات بعد أن يُنهي الطلاب اختباراً فردياً.</div></div>`;
+  if(!total) return `${showKpis?kpis(d,solo,0,0):""}<div class="tbl"><div class="empty">لا توجد إجابات مسجلة بعد في هذا النطاق. تظهر التحليلات بعد أن يُنهي الطلاب اختباراً فردياً.</div></div>`;
   const rated=d.bySkill.filter(r=>r.answered>=MIN_ANSWERS).map(r=>({...r,p:pctOf(r)}));
   const strong=rated.filter(r=>r.p>=STRONG).sort((a,b)=>b.p-a.p||b.answered-a.answered).slice(0,6);
   const weak=rated.filter(r=>r.p<WEAK).sort((a,b)=>a.p-b.p||b.answered-a.answered).slice(0,6);
   const skills=[...d.bySkill].sort((a,b)=>pctOf(a)-pctOf(b)||b.answered-a.answered);
   const who=solo?"الطالب":"الطلاب";
-  return `${kpis(d,solo,total,right)}
+  return `${showKpis?kpis(d,solo,total,right):""}
   <div class="duo">
     <section class="card good"><h3>▲ نقاط القوة</h3>${strong.length?`<ul>${strong.map(r=>`<li><span>${escA(r.skill)}</span><b>${r.p}%</b></li>`).join("")}</ul>`:`<p class="dim">لا توجد مهارة تجاوز فيها ${who} ${STRONG}% بعد.</p>`}</section>
     <section class="card bad"><h3>▼ نقاط الضعف</h3>${weak.length?`<ul>${weak.map(r=>`<li><span>${escA(r.skill)}</span><b>${r.p}%</b></li>`).join("")}</ul>
@@ -92,7 +92,7 @@ function timelineHTML(rows){
   return `<section class="card"><h3>تطور الدرجات ${last.length>1?`<small style="color:${diff>=0?"var(--right)":"var(--wrong)"}">${diff>=0?"▲ تحسّن":"▼ تراجع"} ${Math.abs(diff)} نقطة</small>`:""}</h3>
   <div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${h}" width="100%" style="min-width:${Math.min(w,600)}px;max-height:220px" role="img" aria-label="تطور نسبة الدرجة عبر الاختبارات" direction="ltr">
     ${[0,50,100].map(p=>`<line x1="${pad}" x2="${w-pad}" y1="${y(p)}" y2="${y(p)}" stroke="var(--line)" stroke-dasharray="${p?3:0}"/><text x="2" y="${y(p)+4}" fill="var(--chalk-dim)" font-size="10">${p}</text>`).join("")}
-    <polyline points="${pts}" fill="none" stroke="var(--saffron)" stroke-width="2"/>
-    ${last.map((r,i)=>`<g><circle cx="${x(i)}" cy="${y(r.percent)}" r="5" fill="var(--saffron)" stroke="var(--board-2)" stroke-width="2"/><circle cx="${x(i)}" cy="${y(r.percent)}" r="14" fill="transparent"><title>${new Date(r.created_at).toLocaleDateString("ar-SA")}: ${r.score}/${r.total} (${r.percent}%)</title></circle></g>`).join("")}
+    <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="2.5"/>
+    ${last.map((r,i)=>`<g><circle cx="${x(i)}" cy="${y(r.percent)}" r="5" fill="var(--brand)" stroke="var(--surface)" stroke-width="2"/><circle cx="${x(i)}" cy="${y(r.percent)}" r="14" fill="transparent"><title>${new Date(r.created_at).toLocaleDateString(LOCALE)}: ${r.score}/${r.total} (${r.percent}%)</title></circle></g>`).join("")}
   </svg></div></section>`;
 }
