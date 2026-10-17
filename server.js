@@ -22,7 +22,9 @@ app.get("/health", (req, res) => res.json({ ok: true, db: dbError ? "error" : "o
 app.use("/api", (req, res, next) => dbError ? res.status(503).json({ error: "قاعدة البيانات غير متصلة: " + dbError }) : next());
 app.use(cookieParser());
 
-const publicUser = (u) => ({ id: u.id, username: u.username, full_name: u.full_name, role: u.role, class_name: u.class_name });
+const publicUser = (u) => ({ id: u.id, username: u.username, full_name: u.full_name, role: u.role, class_name: u.class_name, stage: u.stage });
+const STAGES = ["أول ثانوي", "ثاني ثانوي", "ثالث ثانوي"];
+const cleanStage = (s) => (STAGES.includes(s) ? s : null);
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 const cleanUsername = (s) => String(s || "").trim().toLowerCase();
 const USERNAME_RE = /^[a-z0-9_.-]{3,32}$/;
@@ -62,8 +64,8 @@ app.post("/api/register", rateLimit, wrap(async (req, res) => {
   if (!full_name) return res.status(400).json({ error: "الاسم الكامل مطلوب" });
   if (password.length < 6) return res.status(400).json({ error: "كلمة المرور 6 أحرف على الأقل" });
   const { rows } = await pool.query(
-    "INSERT INTO users (username, full_name, password_hash, class_name) VALUES ($1,$2,$3,$4) ON CONFLICT (username) DO NOTHING RETURNING *",
-    [username, full_name, await bcrypt.hash(password, 10), class_name]
+    "INSERT INTO users (username, full_name, password_hash, class_name, stage) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (username) DO NOTHING RETURNING *",
+    [username, full_name, await bcrypt.hash(password, 10), class_name, cleanStage(req.body.stage)]
   );
   if (!rows.length) return res.status(409).json({ error: "اسم المستخدم مستخدم من قبل" });
   setSession(res, rows[0]);
@@ -87,11 +89,31 @@ app.post("/api/results", auth, wrap(async (req, res) => {
   const total = parseInt(req.body.total, 10), score = parseInt(req.body.score, 10), level = parseInt(req.body.level, 10) || 0;
   if (!(total > 0 && total <= 500 && score >= 0 && score <= total && level >= 0 && level <= 3))
     return res.status(400).json({ error: "بيانات الدرجة غير صحيحة" });
-  const { rows } = await pool.query(
-    "INSERT INTO results (user_id, score, total, percent, level) VALUES ($1,$2,$3,$4,$5) RETURNING *",
-    [req.user.id, score, total, Math.round((score / total) * 100), level]
-  );
-  res.status(201).json({ result: rows[0] });
+  const answers = Array.isArray(req.body.answers) ? req.body.answers.slice(0, total) : [];
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  const valid = answers.filter((a) => a && int(a.q, 0, 10000) && int(a.s, 1, 3) && int(a.d, 1, 3) && typeof a.k === "string");
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query(
+      "INSERT INTO results (user_id, score, total, percent, level) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+      [req.user.id, score, total, Math.round((score / total) * 100), level]
+    );
+    if (valid.length)
+      await client.query(
+        `INSERT INTO answers (result_id, user_id, q_index, section, level, skill, picked, correct)
+         SELECT $1, $2, * FROM unnest($3::int[], $4::int[], $5::int[], $6::text[], $7::int[], $8::bool[])`,
+        [rows[0].id, req.user.id, valid.map((a) => a.q), valid.map((a) => a.s), valid.map((a) => a.d),
+         valid.map((a) => a.k.slice(0, 60)), valid.map((a) => (int(a.p, 0, 3) ? a.p : null)), valid.map((a) => a.ok === true)]
+      );
+    await client.query("COMMIT");
+    res.status(201).json({ result: rows[0] });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }));
 
 app.get("/api/results/me", auth, wrap(async (req, res) => {
@@ -122,7 +144,7 @@ app.delete("/api/admin/results/:id", auth, staffOnly, wrap(async (req, res) => {
 // ---------- users ----------
 app.get("/api/admin/users", auth, staffOnly, wrap(async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT u.id, u.username, u.full_name, u.role, u.class_name, u.created_at,
+    SELECT u.id, u.username, u.full_name, u.role, u.class_name, u.stage, u.created_at,
            COUNT(r.id)::int AS attempts, MAX(r.percent) AS best
     FROM users u LEFT JOIN results r ON r.user_id = u.id
     GROUP BY u.id ORDER BY CASE u.role WHEN 'admin' THEN 0 WHEN 'teacher' THEN 1 ELSE 2 END, u.class_name NULLS LAST, u.full_name`);
@@ -139,8 +161,8 @@ app.post("/api/admin/users", auth, staffOnly, wrap(async (req, res) => {
   if (!full_name) return res.status(400).json({ error: "الاسم الكامل مطلوب" });
   if (password.length < 6) return res.status(400).json({ error: "كلمة المرور 6 أحرف على الأقل" });
   const { rows } = await pool.query(
-    "INSERT INTO users (username, full_name, password_hash, role, class_name) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (username) DO NOTHING RETURNING *",
-    [username, full_name, await bcrypt.hash(password, 10), role, String(req.body.class_name || "").trim().slice(0, 40) || null]
+    "INSERT INTO users (username, full_name, password_hash, role, class_name, stage) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (username) DO NOTHING RETURNING *",
+    [username, full_name, await bcrypt.hash(password, 10), role, String(req.body.class_name || "").trim().slice(0, 40) || null, cleanStage(req.body.stage)]
   );
   if (!rows.length) return res.status(409).json({ error: "اسم المستخدم مستخدم من قبل" });
   res.status(201).json({ user: publicUser(rows[0]) });
@@ -157,9 +179,13 @@ async function manageable(req, res) {
 
 app.patch("/api/admin/users/:id", auth, staffOnly, wrap(async (req, res) => {
   const t = await manageable(req, res); if (!t) return;
-  const password = String(req.body.password || "");
-  if (password.length < 6) return res.status(400).json({ error: "كلمة المرور 6 أحرف على الأقل" });
-  await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [await bcrypt.hash(password, 10), t.id]);
+  if ("stage" in req.body)
+    await pool.query("UPDATE users SET stage = $1 WHERE id = $2", [cleanStage(req.body.stage), t.id]);
+  if ("password" in req.body) {
+    const password = String(req.body.password || "");
+    if (password.length < 6) return res.status(400).json({ error: "كلمة المرور 6 أحرف على الأقل" });
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [await bcrypt.hash(password, 10), t.id]);
+  }
   res.json({ ok: true });
 }));
 
@@ -208,6 +234,51 @@ app.put("/api/admin/students/:id", auth, staffOnly, wrap(async (req, res) => {
 app.delete("/api/admin/students/:id", auth, staffOnly, wrap(async (req, res) => {
   await pool.query("DELETE FROM students WHERE id = $1", [parseInt(req.params.id, 10) || 0]);
   res.json({ ok: true });
+}));
+
+// ---------- analytics: skills, strengths/weaknesses — per student, per stage, or school-wide ----------
+async function analytics({ userId = null, stage = null }) {
+  // $1 = user id filter, $2 = stage filter ('' = unassigned stage); null means "all".
+  const where = `WHERE u.role = 'student' AND ($1::int IS NULL OR u.id = $1)
+    AND ($2::text IS NULL OR COALESCE(u.stage, '') = $2)`;
+  const p = [userId, stage];
+  const acc = "COUNT(*)::int AS answered, COUNT(*) FILTER (WHERE a.correct)::int AS correct";
+  const q = (sql) => pool.query(sql, p).then((r) => r.rows);
+  const [kpi, bySection, byLevel, bySkill, questions, students, byStage, timeline] = await Promise.all([
+    q(`SELECT COUNT(DISTINCT u.id)::int AS students, COUNT(r.id)::int AS attempts, ROUND(AVG(r.percent))::int AS avg_percent
+       FROM users u LEFT JOIN results r ON r.user_id = u.id ${where}`),
+    q(`SELECT a.section, ${acc} FROM answers a JOIN users u ON u.id = a.user_id ${where} GROUP BY 1 ORDER BY 1`),
+    q(`SELECT a.level, ${acc} FROM answers a JOIN users u ON u.id = a.user_id ${where} GROUP BY 1 ORDER BY 1`),
+    q(`SELECT a.skill, MIN(a.section) AS section, ${acc} FROM answers a JOIN users u ON u.id = a.user_id ${where} GROUP BY 1`),
+    q(`SELECT a.q_index, ${acc}, MODE() WITHIN GROUP (ORDER BY a.picked) FILTER (WHERE NOT a.correct AND a.picked IS NOT NULL) AS common_wrong
+       FROM answers a JOIN users u ON u.id = a.user_id ${where} GROUP BY 1
+       HAVING COUNT(*) FILTER (WHERE NOT a.correct) > 0
+       ORDER BY COUNT(*) FILTER (WHERE NOT a.correct) DESC, COUNT(*) FILTER (WHERE NOT a.correct)::float / COUNT(*) DESC LIMIT 12`),
+    userId ? [] : q(`SELECT u.id, u.full_name, u.class_name, u.stage, COUNT(DISTINCT r.id)::int AS attempts,
+         ROUND(AVG(r.percent))::int AS avg_percent,
+         (SELECT COUNT(*) FROM answers a WHERE a.user_id = u.id)::int AS answered,
+         (SELECT COUNT(*) FROM answers a WHERE a.user_id = u.id AND a.correct)::int AS correct
+       FROM users u LEFT JOIN results r ON r.user_id = u.id ${where} GROUP BY u.id ORDER BY avg_percent DESC NULLS LAST, u.full_name`),
+    userId || stage !== null ? [] : q(`SELECT COALESCE(u.stage, '') AS stage, COUNT(DISTINCT u.id)::int AS students, ${acc}
+       FROM users u JOIN answers a ON a.user_id = u.id ${where} GROUP BY 1 ORDER BY 1`),
+    userId ? q(`SELECT r.created_at, r.percent, r.score, r.total FROM results r JOIN users u ON u.id = r.user_id ${where} ORDER BY r.created_at`) : [],
+  ]);
+  return { kpi: kpi[0], bySection, byLevel, bySkill, questions, students, byStage, timeline };
+}
+
+app.get("/api/admin/analytics", auth, staffOnly, wrap(async (req, res) => {
+  const userId = parseInt(req.query.user_id, 10) || null;
+  const stage = typeof req.query.stage === "string" ? req.query.stage : null;
+  const data = await analytics({ userId, stage });
+  if (userId) {
+    const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+    data.student = rows[0] ? publicUser(rows[0]) : null;
+  }
+  res.json(data);
+}));
+
+app.get("/api/analytics/me", auth, wrap(async (req, res) => {
+  res.json({ ...(await analytics({ userId: req.user.id })), student: publicUser(req.user) });
 }));
 
 app.use(express.static(path.join(__dirname, "public")));

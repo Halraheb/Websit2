@@ -24,7 +24,8 @@
       <h3 id="ttl">تسجيل الدخول</h3>
       <div class="field" id="nameF" hidden><label for="full_name">الاسم الكامل</label><input id="full_name" autocomplete="name"></div>
       <div class="field"><label for="username">اسم المستخدم</label><input id="username" autocomplete="username" required dir="ltr"></div>
-      <div class="field" id="classF" hidden><label for="class_name">الصف / الشعبة</label><input id="class_name" placeholder="مثال: ثالث ثانوي ١"></div>
+      <div class="field" id="stageF" hidden><label for="stage">المرحلة</label><select id="stage" style="background:var(--board);border:1px solid var(--line);border-radius:8px;color:var(--chalk);padding:10px 12px;font:inherit"><option value="">اختر المرحلة</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></div>
+      <div class="field" id="classF" hidden><label for="class_name">الصف / الشعبة</label><input id="class_name" placeholder="مثال: ١ أو أ"></div>
       <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required dir="ltr"></div>
       <div class="err" id="err" role="alert"></div>
       <button class="primary" type="submit" id="go">دخول</button>
@@ -38,7 +39,8 @@ const $=id=>document.getElementById(id);
 function paint(){
   $("ttl").textContent=reg?"إنشاء حساب طالب":"تسجيل الدخول";
   $("go").textContent=reg?"إنشاء الحساب":"دخول";
-  $("nameF").hidden=$("classF").hidden=!reg;
+  $("nameF").hidden=$("classF").hidden=$("stageF").hidden=!reg;
+  $("stage").required=reg;
   $("full_name").required=reg;
   $("password").autocomplete=reg?"new-password":"current-password";
   $("sw").innerHTML=reg?'لديك حساب؟ <button type="button">سجّل الدخول</button>':'طالب جديد؟ <button type="button">أنشئ حساباً</button>';
@@ -47,7 +49,7 @@ function paint(){
 $("f").onsubmit=async e=>{
   e.preventDefault();$("err").textContent="";
   const body={username:$("username").value.trim(),password:$("password").value};
-  if(reg){body.full_name=$("full_name").value.trim();body.class_name=$("class_name").value.trim();}
+  if(reg){body.full_name=$("full_name").value.trim();body.class_name=$("class_name").value.trim();body.stage=$("stage").value;}
   try{
     const r=await fetch(reg?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     const d=await r.json();

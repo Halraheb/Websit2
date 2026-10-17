@@ -29,6 +29,20 @@ CREATE TABLE IF NOT EXISTS results (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS results_user_idx ON results(user_id, created_at DESC);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stage TEXT;
+CREATE TABLE IF NOT EXISTS answers (
+  id         SERIAL PRIMARY KEY,
+  result_id  INTEGER NOT NULL REFERENCES results(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  q_index    INTEGER NOT NULL,
+  section    INTEGER NOT NULL,
+  level      INTEGER NOT NULL,
+  skill      TEXT NOT NULL,
+  picked     INTEGER,
+  correct    BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS answers_user_idx ON answers(user_id);
 CREATE TABLE IF NOT EXISTS students (
   id         SERIAL PRIMARY KEY,
   full_name  TEXT NOT NULL,
