@@ -10,7 +10,7 @@ const qText=q=>q.s===3?`قارن: ${q.v1} ↔ ${q.v2}${q.g?` (${q.g})`:""}`:q.t;
 const qAnswer=q=>(q.s===3?CMP:q.o)[q.a];
 
 function barRow(label,r,sub){
-  const p=pctOf(r), b=r.answered<MIN_ANSWERS?{c:"var(--chalk-dim)",t:"بيانات قليلة",i:"○"}:band(p);
+  const p=pctOf(r), b=r.answered<MIN_ANSWERS?{c:"var(--border-strong)",t:"بيانات قليلة",i:"○"}:band(p);
   return `<div class="hrow" title="${escA(label)}: ${r.correct} صحيحة من ${r.answered} (${p}%)">
     <span class="hl">${escA(label)}${sub?`<small>${escA(sub)}</small>`:""}</span>
     <span class="hbar"><i style="width:${Math.max(p,1)}%;background:${b.c}"></i></span>
@@ -28,9 +28,9 @@ function renderAnalytics(d,{scope,showKpis=true}){
   const who=solo?"الطالب":"الطلاب";
   return `${showKpis?kpis(d,solo,total,right):""}
   <div class="duo">
-    <section class="card good"><h3>▲ نقاط القوة</h3>${strong.length?`<ul>${strong.map(r=>`<li><span>${escA(r.skill)}</span><b>${r.p}%</b></li>`).join("")}</ul>`:`<p class="dim">لا توجد مهارة تجاوز فيها ${who} ${STRONG}% بعد.</p>`}</section>
-    <section class="card bad"><h3>▼ نقاط الضعف</h3>${weak.length?`<ul>${weak.map(r=>`<li><span>${escA(r.skill)}</span><b>${r.p}%</b></li>`).join("")}</ul>
-      <p class="tip">💡 يُنصح بالتركيز على: <b>${weak.slice(0,3).map(r=>escA(r.skill)).join("، ")}</b></p>`:`<p class="dim">لا توجد مهارة أقل من ${WEAK}% — أداء جيد.</p>`}</section>
+    <section class="card good"><h3>${icon("trend",20)}نقاط القوة</h3>${strong.length?`<ul>${strong.map(r=>`<li><span>${escA(r.skill)}</span><b>${r.p}%</b></li>`).join("")}</ul>`:`<p class="dim">لا توجد مهارة تجاوز فيها ${who} ${STRONG}% بعد.</p>`}</section>
+    <section class="card bad"><h3>${icon("alert",20)}نقاط الضعف</h3>${weak.length?`<ul>${weak.map(r=>`<li><span>${escA(r.skill)}</span><b>${r.p}%</b></li>`).join("")}</ul>
+      <p class="tip">${icon("bulb",18)}<span>يُنصح بالتركيز على: <b>${weak.slice(0,3).map(r=>escA(r.skill)).join("، ")}</b></span></p>`:`<p class="dim">لا توجد مهارة أقل من ${WEAK}% — أداء جيد.</p>`}</section>
   </div>
   <p class="dim note">يُحكم على المهارة بعد ${MIN_ANSWERS} إجابات على الأقل · قوي ≥ ${STRONG}% · ضعيف &lt; ${WEAK}%</p>
 
@@ -68,9 +68,9 @@ function questionsHTML(rows,solo){
     const wrong=r.answered-r.correct, ep=Math.round(wrong/r.answered*100);
     const opts=q.s===3?CMP:q.o;
     return `<tr><td>${escA(qText(q))}</td><td class="dim">${escA(q.k)}</td>
-      <td class="pct" style="color:${band(100-ep).c}">${solo?`${wrong} من ${r.answered}`:`${ep}% <small class="dim">(${wrong}/${r.answered})</small>`}</td>
+      <td class="pct">${solo?`${wrong} من ${r.answered}`:`${ep}% <small class="dim">(${wrong}/${r.answered})</small>`}</td>
       <td>${r.common_wrong==null?"—":`${LETTERS[r.common_wrong]}) ${escA(opts[r.common_wrong])}`}</td>
-      <td style="color:var(--right)">${LETTERS[q.a]}) ${escA(qAnswer(q))}</td></tr>`;}).join("")}
+      <td>${LETTERS[q.a]}) ${escA(qAnswer(q))}</td></tr>`;}).join("")}
   </tbody></table></div>`;
 }
 
@@ -80,19 +80,52 @@ function studentsHTML(rows){
   ${rows.map(s=>{const p=s.answered?pctOf(s):null, b=s.avg_percent==null?null:band(s.avg_percent);
     return `<tr><td><button class="link" data-stu="${s.id}">${escA(s.full_name)}</button></td><td>${escA(s.stage||"—")}</td><td>${escA(s.class_name||"—")}</td>
       <td>${s.attempts}</td><td class="pct">${s.avg_percent==null?"—":s.avg_percent+"%"}</td><td>${p==null?"—":p+"%"}</td>
-      <td>${b?`<span style="color:${b.c}">${b.i} ${s.avg_percent<WEAK?"يحتاج دعماً":b.t}</span>`:'<span class="dim">لم يختبر</span>'}</td></tr>`;}).join("")}
+      <td>${b?`<span class="status"><span style="color:${b.c}" aria-hidden="true">${b.i}</span>${s.avg_percent<WEAK?"يحتاج دعماً":b.t}</span>`:'<span class="dim">لم يختبر</span>'}</td></tr>`;}).join("")}
   </tbody></table></div></section>`;
 }
 
+// Score over time: one series, so no legend — the title names it. Solid hairline grid, 2px line, 10% area wash,
+// end-dots with a surface ring, the last value labelled directly, and a hover/focus tooltip on every point.
+// The SVG is drawn at the container's real width (see drawChart) so text stays the same size on every screen.
 function timelineHTML(rows){
-  const last=rows.slice(-20), w=Math.max(320,last.length*48), h=160, pad=24;
-  const x=i=>pad+(last.length===1?(w-2*pad)/2:i*(w-2*pad)/(last.length-1)), y=p=>h-pad-(p/100)*(h-2*pad);
-  const pts=last.map((r,i)=>`${x(i)},${y(r.percent)}`).join(" ");
-  const first=last[0].percent, end=last[last.length-1].percent, diff=end-first;
-  return `<section class="card"><h3>تطور الدرجات ${last.length>1?`<small style="color:${diff>=0?"var(--right)":"var(--wrong)"}">${diff>=0?"▲ تحسّن":"▼ تراجع"} ${Math.abs(diff)} نقطة</small>`:""}</h3>
-  <div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${h}" width="100%" style="min-width:${Math.min(w,600)}px;max-height:220px" role="img" aria-label="تطور نسبة الدرجة عبر الاختبارات" direction="ltr">
-    ${[0,50,100].map(p=>`<line x1="${pad}" x2="${w-pad}" y1="${y(p)}" y2="${y(p)}" stroke="var(--line)" stroke-dasharray="${p?3:0}"/><text x="2" y="${y(p)+4}" fill="var(--chalk-dim)" font-size="10">${p}</text>`).join("")}
-    <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="2.5"/>
-    ${last.map((r,i)=>`<g><circle cx="${x(i)}" cy="${y(r.percent)}" r="5" fill="var(--brand)" stroke="var(--surface)" stroke-width="2"/><circle cx="${x(i)}" cy="${y(r.percent)}" r="14" fill="transparent"><title>${new Date(r.created_at).toLocaleDateString(LOCALE)}: ${r.score}/${r.total} (${r.percent}%)</title></circle></g>`).join("")}
-  </svg></div></section>`;
+  const last=rows.slice(-20), n=last.length, first=last[0].percent, end=last[n-1].percent, diff=end-first;
+  const data=last.map(r=>({p:r.percent,s:r.score,t:r.total,d:r.created_at}));
+  return `<section class="card"><h3>تطور الدرجات <small>${n>1?`${diff>=0?"▲ تحسّن":"▼ تراجع"} ${Math.abs(diff)} نقطة منذ أول اختبار`:""}</small></h3>
+  <div class="chart" dir="ltr" data-rows="${escA(JSON.stringify(data))}" role="img" aria-label="نسبة الدرجة في آخر ${n} اختبارات، من ${first}% إلى ${end}%"></div></section>`;
+}
+
+function drawChart(ch){
+  const rows=JSON.parse(ch.dataset.rows), n=rows.length;
+  const w=Math.max(ch.clientWidth,280), h=Math.min(240,Math.max(170,w*.32)), padL=40, padR=24, padY=22;
+  const x=i=>padL+(n===1?(w-padL-padR)/2:i*(w-padL-padR)/(n-1)), y=p=>h-padY-(p/100)*(h-2*padY);
+  const pts=rows.map((r,i)=>[x(i),y(r.p)]), line=pts.map(p=>p.join(",")).join(" ");
+  const day=d=>new Date(d).toLocaleDateString(LOCALE,{day:"numeric",month:"short"});
+  ch.innerHTML=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+    ${[0,50,100].map(p=>`<line x1="${padL}" x2="${w-padR}" y1="${y(p)}" y2="${y(p)}" stroke="var(--border)" stroke-width="1"/><text x="${padL-8}" y="${y(p)+4}" text-anchor="end" fill="var(--muted)" font-size="12">${p}%</text>`).join("")}
+    <polygon points="${x(0)},${y(0)} ${line} ${x(n-1)},${y(0)}" fill="var(--brand)" opacity=".1"/>
+    <polyline points="${line}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${rows.map((r,i)=>`<g class="hit" tabindex="0" data-i="${i}" aria-label="${escA(day(r.d))}: ${r.p}%">
+      <circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="16" fill="transparent"/>
+      <circle class="ring" cx="${pts[i][0]}" cy="${pts[i][1]}" r="4.5" fill="var(--brand)" stroke="var(--surface)" stroke-width="2"/></g>`).join("")}
+    <text x="${pts[n-1][0]}" y="${pts[n-1][1]-12}" text-anchor="${n>1?"end":"middle"}" fill="var(--text)" font-size="13" font-weight="600">${rows[n-1].p}%</text>
+  </svg><div class="tip-box" dir="rtl" hidden></div>`;
+  const tip=ch.querySelector(".tip-box");
+  const show=g=>{const r=rows[+g.dataset.i], [cx,cy]=pts[+g.dataset.i];
+    tip.textContent=`${day(r.d)} · ${r.s} من ${r.t} (${r.p}%)`; tip.hidden=false;
+    const half=tip.offsetWidth/2+4; // keep the whole tooltip inside the chart
+    tip.style.left=Math.min(Math.max(cx,half),w-half)+"px"; tip.style.top=cy+"px";};
+  ch.querySelectorAll(".hit").forEach(g=>{
+    g.addEventListener("mouseenter",()=>show(g)); g.addEventListener("focus",()=>show(g));
+    g.addEventListener("mouseleave",()=>tip.hidden=true); g.addEventListener("blur",()=>tip.hidden=true);
+  });
+}
+
+// Draws every .chart inside root, and redraws on resize.
+function bindCharts(root){
+  const charts=[...root.querySelectorAll(".chart[data-rows]")];
+  charts.forEach(drawChart);
+  if(charts.length&&!bindCharts.ro){
+    let t; bindCharts.ro=true;
+    addEventListener("resize",()=>{clearTimeout(t);t=setTimeout(()=>document.querySelectorAll(".chart[data-rows]").forEach(drawChart),150);});
+  }
 }

@@ -1,0 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700&family=Tajawal:wght@400;500;700&display=swap");
+/* قدرات الخويلدية — brand tokens only. Everything else lives in shell.css / style.css, shared with the physics site.
+   One accent (deep green), neutrals for everything else, status colours always paired with an icon + label. */
+:root{
+  --bg:#F4F6F3; --surface:#FFFFFF; --surface-2:#EDF1EC; --border:#D9E0D8; --border-strong:#BFCABD;
+  --text:#14201C; --muted:#56655E;
+  --brand:#0D6E57; --brand-ink:#FFFFFF; --brand-soft:#DCEFE8; --hero:#0E3B30; --hero-ink:#EEF5F2; --hero-accent:#F2C14E;
+  --ok:#17804A; --warn:#946000; --bad:#C23B2E;
+  --t1:#B87700; --t2:#2B7FC4; --t3:#B8417F; --t4:#4F8A2C;
+  --bronze:#A8622F; --silver:#6E7B88; --gold:#B88A0B;
+  --display:"Cairo","Tajawal",Tahoma,sans-serif;
+  --body:"Tajawal",Tahoma,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1412; --surface:#13201C; --surface-2:#192824; --border:rgb(255 255 255/.09); --border-strong:rgb(255 255 255/.18);
+  --text:#EBF2EE; --muted:#9AB0A7;
+  --brand:#3CC49A; --brand-ink:#04211A; --brand-soft:#153A30; --hero:#081411; --hero-ink:#EBF2EE; --hero-accent:#F2C14E;
+  --ok:#55D08F; --warn:#F0B545; --bad:#F2776B;
+  --t1:#F2B13C; --t2:#62B6F0; --t3:#E98BC4; --t4:#9AD86A;
+  --bronze:#D08A57; --silver:#A9B5BF; --gold:#F0C24B;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1412; --surface:#13201C; --surface-2:#192824; --border:rgb(255 255 255/.09); --border-strong:rgb(255 255 255/.18);
+  --text:#EBF2EE; --muted:#9AB0A7;
+  --brand:#3CC49A; --brand-ink:#04211A; --brand-soft:#153A30; --hero:#081411; --hero-ink:#EBF2EE; --hero-accent:#F2C14E;
+  --ok:#55D08F; --warn:#F0B545; --bad:#F2776B;
+  --t1:#F2B13C; --t2:#62B6F0; --t3:#E98BC4; --t4:#9AD86A;
+  --bronze:#D08A57; --silver:#A9B5BF; --gold:#F0C24B;
+  color-scheme:dark;
+}

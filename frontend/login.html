@@ -3,67 +3,112 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>تسجيل الدخول · قدرات الخويلدية</title>
+<title>تسجيل الدخول</title>
 <script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/shell.css">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header class="nav"><div class="nav-in"><a class="logo" href="/"><i>خ</i><span><b>قدرات الخويلدية</b><small>مدرسة الخويلدية الثانوية</small></span></a></div></header>
+<header class="nav"><div class="nav-in" id="brand"></div></header>
 <main class="app">
   <div class="auth">
-    <section class="pitch">
-      <h1>منصة التدريب على اختبار القدرات</h1>
-      <p>تدرّب على القسم الكمي، وتابع درجاتك وتطوّر مستواك، واكتشف نقاط قوتك وضعفك في كل مهارة، واجمع الإنجازات.</p>
-      <ul class="feats">
-        <li><span>📝</span>198 سؤالاً في الحساب والهندسة والمقارنة</li>
-        <li><span>📊</span>تحليل نقاط القوة والضعف لكل مهارة</li>
-        <li><span>🏅</span>إنجازات ومستويات وخبرة (XP) مع كل اختبار</li>
-      </ul>
+    <section class="pitch" aria-labelledby="pitchTitle">
+      <h1 id="pitchTitle"></h1>
+      <p id="pitchText"></p>
+      <ul class="feats" id="feats"></ul>
     </section>
-    <form class="panel" id="f">
-      <h2 id="ttl" style="font-size:1.4rem">تسجيل الدخول</h2>
-      <div class="field" id="nameF" hidden><label for="full_name">الاسم الكامل</label><input id="full_name" autocomplete="name"></div>
-      <div class="field"><label for="username">اسم المستخدم</label><input id="username" autocomplete="username" required dir="ltr"></div>
-      <div class="grid2" id="schoolF" hidden>
-        <div class="field"><label for="stage">المرحلة</label><select id="stage"><option value="">اختر المرحلة</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></div>
-        <div class="field"><label for="class_name">الصف / الشعبة</label><input id="class_name" placeholder="مثال: ١ أو أ"></div>
+    <form class="panel" id="f" novalidate>
+      <h2 id="ttl">تسجيل الدخول</h2>
+      <div class="state error" id="health" role="alert" hidden></div>
+      <div class="field" id="nameF" hidden>
+        <label for="full_name">الاسم الكامل</label>
+        <input id="full_name" autocomplete="name" maxlength="80" aria-describedby="full_name-err">
+        <span class="field-err" id="full_name-err" hidden></span>
       </div>
-      <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required dir="ltr"></div>
+      <div class="field">
+        <label for="username">اسم المستخدم</label>
+        <input id="username" autocomplete="username" required dir="ltr" autocapitalize="none" spellcheck="false" aria-describedby="username-hint username-err">
+        <span class="hint" id="username-hint">حروف إنجليزية أو أرقام، من 3 إلى 32 حرفاً</span>
+        <span class="field-err" id="username-err" hidden></span>
+      </div>
+      <div class="grid2" id="schoolF" hidden>
+        <div class="field"><label for="stage">المرحلة</label>
+          <select id="stage" aria-describedby="stage-err"><option value="">اختر المرحلة</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select>
+          <span class="field-err" id="stage-err" hidden></span></div>
+        <div class="field"><label for="class_name">الصف أو الشعبة <span class="dim">(اختياري)</span></label><input id="class_name" maxlength="40" placeholder="مثال: ١ أو أ"></div>
+      </div>
+      <div class="field">
+        <label for="password">كلمة المرور</label>
+        <input id="password" type="password" autocomplete="current-password" required dir="ltr" aria-describedby="password-err">
+        <span class="field-err" id="password-err" hidden></span>
+      </div>
       <div class="err" id="err" role="alert"></div>
       <button class="primary" type="submit" id="go">دخول</button>
       <div class="switch" id="sw"></div>
     </form>
   </div>
 </main>
-<footer class="foot"><span>مدير المدرسة: رمضان حيدر الرمضان</span><span>إعداد: الأستاذ حسن الراهب</span></footer>
+<footer class="foot" id="foot"></footer>
+<script src="/site.js"></script>
+<script src="/common.js"></script>
 <script>
 let reg=false;
-const $=id=>document.getElementById(id);
 const home=u=>u.role==="student"?"/":"/dashboard.html";
+document.title=`تسجيل الدخول · ${SITE.name}`;
+$("brand").innerHTML=logoHTML();
+$("pitchTitle").textContent=SITE.pitchTitle;
+$("pitchText").textContent=SITE.pitch;
+$("feats").innerHTML=SITE.features.map(([ic,t])=>`<li><span>${icon(ic,18)}</span>${esc(t)}</li>`).join("");
+$("foot").innerHTML=SITE.credits.map(([k,v])=>`<span>${esc(k)}: ${esc(v)}</span>`).join("");
+
+// Validation runs on blur, then live once a field has been touched; the message clears as soon as the value is valid.
+const RULES={
+  full_name:v=>!reg||v.trim()?"":"اكتب اسمك الكامل",
+  username:v=>/^[a-z0-9_.-]{3,32}$/i.test(v.trim())?"":"اسم المستخدم من 3 إلى 32 حرفاً إنجليزياً أو رقماً، بلا مسافات",
+  stage:v=>!reg||v?"":"اختر مرحلتك الدراسية",
+  password:v=>reg?(v.length>=6?"":"كلمة المرور 6 أحرف على الأقل"):(v?"":"اكتب كلمة المرور"),
+};
+const touched=new Set();
+function check(id){
+  const el=$(id), msg=RULES[id](el.value), out=$(id+"-err");
+  el.setAttribute("aria-invalid",msg?"true":"false");
+  out.hidden=!msg; out.innerHTML=msg?icon("alert",14)+esc(msg):"";
+  return !msg;
+}
+Object.keys(RULES).forEach(id=>{
+  $(id).addEventListener("blur",()=>{touched.add(id);check(id);});
+  $(id).addEventListener("input",()=>{if(touched.has(id))check(id);});
+});
+
 function paint(){
   $("ttl").textContent=reg?"إنشاء حساب طالب":"تسجيل الدخول";
   $("go").textContent=reg?"إنشاء الحساب":"دخول";
   $("nameF").hidden=$("schoolF").hidden=!reg;
-  $("stage").required=$("full_name").required=reg;
   $("password").autocomplete=reg?"new-password":"current-password";
   $("sw").innerHTML=reg?'لديك حساب؟ <button type="button">سجّل الدخول</button>':'طالب جديد؟ <button type="button">أنشئ حساباً</button>';
-  $("sw").querySelector("button").onclick=()=>{reg=!reg;$("err").textContent="";paint();};
+  $("sw").querySelector("button").onclick=()=>{reg=!reg;$("err").textContent="";touched.clear();Object.keys(RULES).forEach(id=>{$(id).removeAttribute("aria-invalid");$(id+"-err").hidden=true;});paint();(reg?$("full_name"):$("username")).focus();};
 }
 $("f").onsubmit=async e=>{
   e.preventDefault();$("err").textContent="";
+  const ids=Object.keys(RULES).filter(id=>reg||!["full_name","stage"].includes(id));
+  ids.forEach(id=>touched.add(id));
+  const bad=ids.filter(id=>!check(id));
+  if(bad.length){$(bad[0]).focus();return;}
   const body={username:$("username").value.trim(),password:$("password").value};
   if(reg){body.full_name=$("full_name").value.trim();body.class_name=$("class_name").value.trim();body.stage=$("stage").value;}
-  try{
-    const r=await fetch(reg?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    const d=await r.json();
-    if(!r.ok){$("err").textContent=d.error||"حدث خطأ";return;}
-    location.href=home(d.user);
-  }catch(err){$("err").textContent="تعذّر الاتصال بالخادم";}
+  await pending($("go"),reg?"جارٍ إنشاء الحساب…":"جارٍ الدخول…",async()=>{
+    try{
+      const r=await fetch(reg?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok){$("err").textContent=d.error||"حدث خطأ، أعد المحاولة.";return;}
+      location.href=home(d.user);
+    }catch(err){$("err").textContent="تعذّر الاتصال بالخادم. تحقّق من الإنترنت ثم أعد المحاولة.";}
+  });
 };
-fetch("/api/me").then(r=>r.ok?r.json():null).then(d=>{if(d)location.href=home(d.user);});
-fetch("/health").then(r=>r.json()).then(h=>{if(h.error)$("err").textContent="تنبيه للمشرف: "+h.error;}).catch(()=>{});
+fetch("/api/me").then(r=>r.ok?r.json():null).then(d=>{if(d)location.href=home(d.user);}).catch(()=>{});
+fetch("/health").then(r=>r.json()).then(h=>{if(h.error){$("health").hidden=false;$("health").innerHTML=icon("alert",22)+`<div><h3>تنبيه للمشرف</h3><p>${esc(h.error)}</p></div>`;}}).catch(()=>{});
 paint();
 </script>
 </body>

@@ -3,33 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>الملف الشخصي · قدرات الخويلدية</title>
+<title>الملف الشخصي</title>
 <script>try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/shell.css">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <header class="nav" id="nav"></header>
-<main class="app" id="view"><p class="dim">جارٍ التحميل…</p></main>
+<main class="app" id="view" aria-live="polite"></main>
+<script src="/site.js"></script>
 <script src="/common.js"></script>
 <script src="/questions.js"></script>
 <script src="/analytics.js"></script>
 <script>
 // Student profile: own profile for students, or any student's via ?id= for staff.
-const pctColor=p=>p>=90?"var(--ok)":p>=60?"var(--warn)":"var(--bad)";
+const ID=new URLSearchParams(location.search).get("id");
 
 function heroHTML(p){
   const s=p.student, L=p.level;
   const toNext=L.to==null?100:Math.round((L.xp-L.from)/(L.to-L.from)*100);
-  return `<section class="hero">
+  return `<section class="hero" aria-label="بطاقة الطالب">
     <div class="big-avatar" aria-hidden="true">${esc(initials(s.full_name))}</div>
-    <div><h1>${esc(s.full_name)}</h1>
-      <div class="sub">${[s.stage,s.class_name&&"الصف "+s.class_name,"@"+s.username].filter(Boolean).map(esc).join(" · ")}</div>
+    <div><h1><bdi>${esc(s.full_name)}</bdi></h1>
+      <div class="sub">${[s.stage,s.class_name&&"الصف "+s.class_name].filter(Boolean).map(esc).join(" · ")}${s.stage||s.class_name?" · ":""}<bdi dir="ltr">@${esc(s.username)}</bdi></div>
       <div class="sub">عضو منذ ${fmtDay(s.created_at)}</div></div>
-    <div class="lvl"><small>المستوى ${L.number}</small><br><b>${esc(L.title)}</b>
-      <div class="bar"><i style="width:${toNext}%"></i></div>
-      <small><b dir="ltr" style="font-size:1rem">${L.xp.toLocaleString(LOCALE)} XP</b><br>${L.to==null?"أعلى مستوى":`باقٍ ${(L.to-L.xp).toLocaleString(LOCALE)} للمستوى التالي (${esc(L.next_title)})`}</small></div>
+    <div class="lvl"><small>المستوى ${L.number}</small><b>${esc(L.title)}</b>
+      <div class="bar" role="progressbar" aria-label="التقدم نحو المستوى التالي" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${toNext}"><i style="width:${toNext}%"></i></div>
+      <span class="xpn"><bdi dir="ltr">${L.xp.toLocaleString(LOCALE)} XP</bdi></span>
+      <small>${L.to==null?"أعلى مستوى":`باقٍ ${(L.to-L.xp).toLocaleString(LOCALE)} للمستوى التالي: ${esc(L.next_title)}`}</small></div>
   </section>`;
 }
 
@@ -40,40 +43,49 @@ function statsHTML(st){
     <div class="stat"><span>متوسط الدرجة</span><b>${v(st.avg)}</b></div>
     <div class="stat"><span>أفضل درجة</span><b>${v(st.best)}</b></div>
     <div class="stat"><span>آخر درجة</span><b>${v(st.last)}</b></div>
-    <div class="stat"><span>إجابات صحيحة</span><b>${st.correct}<small class="dim" style="font-size:.9rem"> / ${st.answered}</small></b></div>
-    <div class="stat"><span>أطول سلسلة أيام</span><b>${st.streak} 🔥</b></div></div>`;
+    <div class="stat"><span>إجابات صحيحة</span><b>${st.correct} <small>من ${st.answered}</small></b></div>
+    <div class="stat"><span>أطول سلسلة أيام</span><b>${st.streak} <small>${st.streak===1?"يوم":"أيام"}</small></b></div></div>`;
 }
 
 function achievementsHTML(list){
   const earned=list.filter(a=>a.earned_at).sort((a,b)=>new Date(b.earned_at)-new Date(a.earned_at));
   const locked=list.filter(a=>!a.earned_at).sort((a,b)=>b.progress/b.goal-a.progress/a.goal);
-  return `<section class="card"><h3>🏅 الإنجازات <small class="dim">${earned.length} من ${list.length}</small></h3>
+  return `<section class="stack" aria-labelledby="achTitle">
+    <div class="section-head"><div><h2 id="achTitle">الإنجازات</h2><p>${earned.length} من ${list.length} · الأقرب للتحقيق يظهر أولاً بعد المحقَّقة</p></div></div>
     <div class="badges">${[...earned,...locked].map(badgeHTML).join("")}</div></section>`;
 }
 
 function recentHTML(rows){
   if(!rows.length)return "";
-  return `<section class="card"><h3>آخر الاختبارات</h3><div class="tbl"><table><thead><tr><th>التاريخ</th><th>الدرجة</th><th>النسبة</th><th>المستوى</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${fmtDate(r.created_at)}</td><td>${r.score} / ${r.total}</td><td class="pct" style="color:${pctColor(r.percent)}">${r.percent}%</td><td>${LEVELS[r.level]||"—"}</td></tr>`).join("")}
+  return `<section class="stack" aria-labelledby="recentTitle"><div class="section-head"><h2 id="recentTitle">آخر الاختبارات</h2></div>
+    <div class="tbl"><table><thead><tr><th>التاريخ</th><th>الدرجة</th><th>النسبة</th><th>${esc(SITE.scopeHeader)}</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${fmtDate(r.created_at)}</td><td>${r.score} من ${r.total}</td><td class="pct">${r.percent}%</td><td>${esc(SITE.scopeLabel(r))}</td></tr>`).join("")}
   </tbody></table></div></section>`;
 }
 
+async function load(){
+  const p=await api(ID?"/api/admin/profile/"+encodeURIComponent(ID):"/api/profile/me");
+  document.title=`${p.student.full_name} · ${SITE.name}`;
+  const fresh=!p.stats.attempts;
+  $("view").innerHTML=`${ID?`<div><a class="ghost" href="/dashboard.html">${icon("back",16,"mirror")}<span>لوحة المعلم</span></a></div>`:""}
+    ${heroHTML(p)}
+    ${statsHTML(p.stats)}
+    ${fresh?emptyHTML(ID?"لم يُنهِ هذا الطالب أي اختبار فردي بعد":"ابدأ أول اختبار",
+        ID?"تظهر الدرجات ونقاط القوة والضعف هنا بعد أن يُنهي الطالب اختباراً فردياً.":"بعد أول اختبار فردي تظهر هنا درجاتك ونقاط قوتك وضعفك، وتبدأ الإنجازات.",
+        ID?"":`<a class="primary" href="/">${icon("play",18)}<span>ابدأ اختباراً فردياً</span></a>`):""}
+    ${achievementsHTML(p.achievements)}
+    ${fresh?"":`<section class="stack" aria-labelledby="swTitle"><div class="section-head"><div><h2 id="swTitle">نقاط القوة والضعف</h2><p>${esc(SITE.areaIntro)}</p></div></div>
+      ${renderAnalytics(p.analytics,{scope:"student",showKpis:false})}</section>`}
+    ${recentHTML(p.recent)}`;
+  bindCharts($("view"));
+}
+
 (async()=>{
-  const id=new URLSearchParams(location.search).get("id");
-  const me=await boot(id?"dashboard":"profile");
-  if(!id&&me.role!=="student"){location.href="/dashboard.html";return;}
   try{
-    const p=await api(id?"/api/admin/profile/"+encodeURIComponent(id):"/api/profile/me");
-    document.title=`${p.student.full_name} · قدرات الخويلدية`;
-    $("view").innerHTML=`${id?'<div><a class="ghost" href="/dashboard.html">→ رجوع للوحة المعلم</a></div>':""}
-      ${heroHTML(p)}
-      ${statsHTML(p.stats)}
-      ${p.stats.attempts?"":`<section class="card" style="align-items:flex-start"><h3>ابدأ رحلتك</h3><p class="dim" style="margin:0">لم ${id?"يُنهِ هذا الطالب":"تُنهِ"} أي اختبار فردي بعد. بعد أول اختبار تظهر هنا الدرجات ونقاط القوة والضعف وتبدأ الإنجازات.</p>${id?"":'<a class="primary" href="/" style="text-decoration:none">ابدأ اختباراً الآن</a>'}</section>`}
-      ${achievementsHTML(p.achievements)}
-      <div class="page-head"><div><h2 style="font-size:1.4rem">نقاط القوة والضعف</h2><p>دقة الإجابات في كل مهارة من مهارات القسم الكمي</p></div></div>
-      ${renderAnalytics(p.analytics,{scope:"student",showKpis:false})}
-      ${recentHTML(p.recent)}`;
-  }catch(e){$("view").innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`;}
+    const me=await boot(ID?"dashboard":"profile");
+    if(!ID&&me.role!=="student"){location.href="/dashboard.html";return;}
+  }catch(e){bootError(e);return;}
+  withStates($("view"),load,"جارٍ تحميل الملف الشخصي…");
 })();
 </script>
 </body>

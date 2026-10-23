@@ -1,0 +1,98 @@
+/* Shared shell for both sites — loaded on every page, including the quiz pages, after theme.css.
+   Holds only what every page needs: base type, icons, top nav, toasts, achievement cards and loading/empty/error states.
+   Craft rules followed: one accent per screen region, flat surfaces (borders, not shadows), no letter-spacing on Arabic,
+   Arabic body leading 1.7, logical (inline-start/end) properties only, status colour always paired with an icon + text. */
+[hidden]{display:none!important}
+:root{
+  --radius:12px; --radius-sm:8px;
+  --nav-h:64px;
+  --focus:0 0 0 2px var(--bg),0 0 0 4px var(--brand);
+  /* Names used by older scripts (analytics, quiz). */
+  --line:var(--border); --chalk:var(--text); --chalk-dim:var(--muted); --saffron:var(--warn); --right:var(--ok); --wrong:var(--bad);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.7;min-height:100vh;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.35;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.ic{flex:none;vertical-align:-0.2em}
+[dir="rtl"] .ic.mirror{transform:scaleX(-1)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dim{color:var(--muted)}
+a{color:inherit;text-decoration-color:var(--border-strong);text-underline-offset:4px}
+a:hover{text-decoration-color:currentColor}
+.badge .when span{white-space:nowrap}
+
+/* ---------- top nav ---------- */
+.nav{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1200px;margin:0 auto;min-height:var(--nav-h);padding:8px 16px;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);margin-inline-end:auto;min-width:0}
+.logo i{width:36px;height:36px;border-radius:10px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-style:normal;font-family:var(--display);font-weight:700;font-size:1.15rem;flex:none}
+.logo b{font-family:var(--display);font-weight:600;font-size:1rem;display:block;line-height:1.3}
+.logo small{color:var(--muted);font-size:.78rem;display:block;line-height:1.4}
+.links{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.links a{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--muted);padding:8px 12px;border-radius:var(--radius-sm);white-space:nowrap;font-weight:500;min-height:40px;position:relative}
+.links a:hover{color:var(--text);background:var(--surface-2)}
+/* Active page: neutral ink + a short underline, so the brand colour stays reserved for the primary action. */
+.links a[aria-current="page"]{color:var(--text);font-weight:600}
+.links a[aria-current="page"]::after{content:"";position:absolute;inset-inline:12px;bottom:-9px;height:2px;border-radius:2px;background:var(--text)}
+.userbox{display:flex;align-items:center;gap:8px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);display:grid;place-items:center;font-family:var(--display);font-weight:600;flex:none}
+.uname{display:flex;flex-direction:column;font-size:.9rem;line-height:1.35;max-width:18ch;min-width:0}
+.uname bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uname small{color:var(--muted);font-size:.75rem}
+.icon-btn{background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);width:40px;height:40px;display:grid;place-items:center;color:var(--muted);flex:none}
+.icon-btn:hover{color:var(--text);border-color:var(--border-strong)}
+@media (max-width:720px){
+  .links{order:3;width:100%;margin-inline:-4px}
+  .links a[aria-current="page"]::after{bottom:-1px}
+  .uname{display:none}
+}
+
+/* ---------- loading / empty / error ---------- */
+.state{display:flex;gap:14px;align-items:flex-start;padding:24px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text)}
+.state>.ic{color:var(--muted);margin-top:2px}
+.state h3{font-size:1.05rem;margin-bottom:2px}
+.state p{margin:0 0 12px;color:var(--muted);max-width:60ch}
+.state p:last-child{margin-bottom:0}
+.state.error{border-color:color-mix(in srgb,var(--bad) 40%,var(--border))}
+.state.error>.ic{color:var(--bad)}
+.state.loading{flex-direction:column;gap:12px}
+.state .slow{margin:4px 0 0;font-size:.9rem}
+.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--surface-2),color-mix(in srgb,var(--surface-2) 60%,var(--surface)),var(--surface-2));background-size:200% 100%;animation:skel 1.4s ease-in-out infinite}
+@keyframes skel{to{background-position:-200% 0}}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-inline-end-color:transparent;display:inline-block;animation:spin .8s linear infinite;vertical-align:-3px;margin-inline-end:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- toasts (bottom, same position every time) ---------- */
+.toasts{position:fixed;bottom:16px;inset-inline:16px;margin-inline:auto;max-width:420px;display:flex;flex-direction:column;gap:8px;z-index:50;pointer-events:none}
+.toast{pointer-events:auto;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:var(--radius);padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgb(0 0 0/.12);animation:rise .25s ease-out}
+.toast b{display:block;font-weight:600}
+.toast small{color:var(--muted)}
+.toast-ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--tier,var(--text));flex:none}
+@keyframes rise{from{transform:translateY(12px);opacity:0}}
+
+/* ---------- achievement cards ---------- */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.badge{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--surface);color:var(--text);text-align:start}
+.badge .ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--muted)}
+.badge-body{min-width:0;flex:1}
+.badge b{display:block;font-family:var(--display);font-weight:600;font-size:.98rem;line-height:1.4}
+.badge p{margin:2px 0 0;font-size:.85rem;color:var(--muted);line-height:1.6}
+.badge .when{font-size:.8rem;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.badge .when .ic{vertical-align:-2px}
+.xp{font-weight:600;color:var(--muted)}
+.badge.earned{border-color:color-mix(in srgb,var(--tier) 35%,var(--border))}
+.badge.earned .ico{background:color-mix(in srgb,var(--tier) 14%,var(--surface));color:var(--tier)}
+.badge.earned .when{color:var(--text)}
+.badge.locked b{color:var(--muted);font-weight:500}
+.tier-bronze{--tier:var(--bronze)} .tier-silver{--tier:var(--silver)} .tier-gold{--tier:var(--gold)}
+/* Meter: the unfilled track is a lighter step so state reads across the whole bar. */
+.meter{height:6px;margin-top:10px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;background:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

@@ -1,0 +1,84 @@
+/* Quiz page (setup, question stage, scores, end screen). Loaded after theme.css, shell.css and style.css. */
+.quizbar{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-height:34px}
+.setup{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:start}
+.setup .intro h2{font-size:clamp(2rem,5vw,3.4rem);margin:0 0 12px;line-height:1.2;text-wrap:balance}
+.setup .intro h2 em{font-style:normal;color:var(--brand)}
+.setup .intro p{color:var(--muted);line-height:1.9;max-width:52ch;margin:0}
+.credits{margin-top:22px;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.95rem}
+.credits dt{color:var(--muted)} .credits dd{margin:0}
+.seg{display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface-2);padding:3px;gap:3px}
+.seg button{background:transparent;border:0;border-radius:9px;padding:8px 14px;min-height:40px;flex:1}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);font-weight:700}
+.seg button:disabled{opacity:.4;cursor:default}
+.teamInputs{display:grid;gap:8px}
+.teamInputs .ti{display:flex;align-items:center;gap:8px}
+.teamInputs input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+
+.stage{flex:1;display:flex;flex-direction:column;gap:18px}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.qnum{font-family:var(--display);font-size:clamp(1.1rem,2vw,1.4rem);color:var(--muted)}
+.qnum b{color:var(--brand);font-size:1.5em;font-variant-numeric:tabular-nums}
+.timer{display:flex;align-items:center;gap:10px}
+.clock{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.4rem);font-variant-numeric:tabular-nums;min-width:3.2ch;text-align:center}
+.clock.low{color:var(--bad)}
+.bar.low i{background:var(--bad)}
+.qtext{font-family:var(--display);font-weight:600;font-size:clamp(1.5rem,3.4vw,2.4rem);line-height:1.6;margin:6px 0;text-wrap:balance}
+.given{color:var(--muted);font-size:clamp(1rem,2vw,1.3rem)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp div{border:2px dashed var(--border);border-radius:14px;padding:16px;text-align:center;background:var(--surface)}
+.cmp span{display:block;color:var(--muted);font-size:.9rem;margin-bottom:6px}
+.cmp strong{font-family:var(--display);font-size:clamp(1.3rem,3vw,2.2rem);font-weight:600}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{display:flex;align-items:center;gap:14px;text-align:start;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-size:clamp(1.1rem,2.4vw,1.5rem);min-width:0;min-height:64px}
+.opt .k{font-family:var(--display);width:1.9em;height:1.9em;flex:none;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);font-size:.8em;background:var(--surface-2)}
+.opt:hover:not(:disabled){border-color:var(--brand)}
+.opt:disabled{cursor:default}
+.opt.picked{border-color:var(--brand)} .opt.picked .k{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.opt.right .k{background:var(--ok);color:var(--surface);border-color:var(--ok)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--surface))}
+.opt.wrong .k{background:var(--bad);color:var(--surface);border-color:var(--bad)}
+.sol{border:1px solid var(--border);padding:12px 16px;font-size:clamp(1rem,2vw,1.2rem);background:var(--surface);border-radius:var(--radius)}
+.sol b{color:var(--ok)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.controls .grp{display:flex;gap:10px;flex-wrap:wrap}
+
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;border-top:1px solid var(--border);padding-top:14px}
+.team{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;min-width:0}
+.team .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.team .sc{font-family:var(--display);font-size:1.8rem;font-variant-numeric:tabular-nums;min-width:2ch;text-align:center}
+.team .pm{display:flex;flex-direction:column;gap:4px}
+.team .pm button{background:transparent;border:1px solid var(--border);border-radius:6px;width:30px;height:24px;line-height:1;font-size:1rem;padding:0}
+.team.got{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.award{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.award span{color:var(--muted);font-size:.9rem}
+.award button{border-radius:999px;padding:6px 14px;border:2px solid currentColor;background:transparent;font-weight:500}
+.award button[aria-pressed="true"]{background:currentColor}
+.award button[aria-pressed="true"] em{color:var(--surface)}
+.award em{font-style:normal;color:var(--text)}
+
+.end{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding-top:2vh}
+.end .crown{font-family:var(--display);color:var(--muted);font-size:1.2rem}
+.end h2{font-size:clamp(2.4rem,7vw,4.6rem);color:var(--brand);text-wrap:balance}
+.end .badges{width:min(720px,100%);text-align:start}
+.end .badges h3{grid-column:1/-1;display:flex;align-items:center;gap:8px;justify-content:center;font-size:1.15rem}
+#saveMsg{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
+.rank{display:grid;gap:8px;width:min(560px,100%)}
+.rank div{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--border);padding:8px 4px;font-size:1.1rem;font-variant-numeric:tabular-nums;gap:10px;text-align:start}
+.keys{color:var(--muted);font-size:.8rem}
+.stage-wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px;min-height:calc(100vh - var(--nav-h))}
+kbd{border:1px solid var(--border);border-radius:4px;padding:0 5px;font-family:inherit;background:var(--surface)}
+
+@media (max-width:760px){
+  .setup{grid-template-columns:1fr}
+  .opts{grid-template-columns:1fr}
+  .keys{display:none}
+}
+
+/* Primary quiz actions and the countdown bar (style.css keeps generic bars neutral). */
+.btn.go{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:600}
+.btn.go:hover{background:var(--brand);filter:brightness(1.08)}
+.stage .bar i{background:var(--brand);transition:width 1s linear}
+.stage .bar.low i{background:var(--bad)}
+.end .chip{font-size:1rem;padding:4px 14px}

@@ -65,11 +65,11 @@ function renderSetup(){
 
 function scoresHTML(){
   if(S.mode==="solo"){const done=Object.keys(S.revealed).length;const t=S.teams[0];
-    return `<section class="scores" aria-label="الدرجة"><div class="team" style="border-inline-start:6px solid var(--t1)"><span class="nm">${esc(t.name)}</span><span class="sc">${ar(t.score)}</span><span class="chip">صحيح من ${ar(done)} مُجاب</span></div>
+    return `<section class="scores" aria-label="الدرجة"><div class="team"><span class="dot" style="background:var(--t1)"></span><span class="nm">${esc(t.name)}</span><span class="sc">${ar(t.score)}</span><span class="chip">صحيح من ${ar(done)} مُجاب</span></div>
       <div class="team"><span class="nm">خطأ</span><span class="sc" style="color:var(--wrong)">${ar(done-t.score)}</span></div>
       <div class="team"><span class="nm">متبقٍ</span><span class="sc" style="color:var(--chalk-dim)">${ar(N()-done)}</span></div></section>`;}
   return `<section class="scores" aria-label="النقاط">${S.teams.map((t,i)=>`
-    <div class="team ${S.awarded[S.idx]&&S.awarded[S.idx].includes(i)?"got":""}" style="border-inline-start:6px solid ${TEAM_COLORS[i]}">
+    <div class="team ${S.awarded[S.idx]&&S.awarded[S.idx].includes(i)?"got":""}"><span class="dot" style="background:${TEAM_COLORS[i]}"></span>
       <span class="nm">${esc(t.name)}</span><span class="sc">${ar(t.score)}</span>
       <span class="pm"><button type="button" data-plus="${i}" aria-label="زيادة نقطة">+</button><button type="button" data-minus="${i}" aria-label="إنقاص نقطة">−</button></span>
     </div>`).join("")}</section>`;
@@ -142,8 +142,8 @@ function renderEnd(){
     <div class="crown">أحسنت يا ${esc(S.teams[0].name)}، انتهت الأسئلة</div>
     <h2>${ar(top)} من ${ar(N())}</h2>
     <div class="chip" style="font-size:1.1rem">${ar(pct)}% · ${grade}</div>
-    <div class="keys" id="saveMsg" style="display:block">${S.saved?"تم حفظ الدرجة في سجلك ✓":"جارٍ حفظ الدرجة…"}</div>
-    <div class="badges" id="newBadges">${(S.newBadges||[]).map(badgeHTML).join("")}</div>
+    <div class="keys" id="saveMsg" role="status">${S.saved?savedHTML():"جارٍ حفظ الدرجة…"}</div>
+    <div class="badges" id="newBadges">${newBadgesHTML()}</div>
     ${miss.length?`<div class="rank"><div style="color:var(--chalk-dim);font-size:1rem">الأسئلة التي تحتاج مراجعة (${ar(miss.length)})</div>${miss.map(x=>`<div style="font-size:1rem"><span>السؤال ${ar(x.i+1)}: ${x.q.s===3?esc(x.q.v1+" ↔ "+x.q.v2):esc(x.q.t)}</span><b style="color:var(--right);white-space:nowrap;margin-inline-start:10px">${LETTERS[x.q.a]}</b></div>`).join("")}</div>`:""}
     <div class="row"><button class="btn" id="back" type="button">→ الرجوع للأسئلة</button><button class="btn go" id="again" type="button">جولة جديدة</button></div>`;
   } else view.innerHTML=`
@@ -166,23 +166,25 @@ document.addEventListener("keydown",e=>{
 });
 
 // ---- ربط الموقع بقاعدة البيانات: حفظ الدرجة وإظهار الإنجازات الجديدة ----
+const savedHTML=()=>`${icon("check",16)} حُفظت الدرجة في سجلك · <a href="/profile.html">عرض ملفي وإنجازاتي</a>`;
+const newBadgesHTML=()=>(S.newBadges||[]).length?`<h3>${icon("trophy",22)}إنجازات جديدة</h3>`+S.newBadges.map(badgeHTML).join(""):"";
 async function saveResult(score){
   if(S.saved||S.saving)return; S.saving=true; S.newBadges=[];
+  const m=()=>document.getElementById("saveMsg");
+  if(m())m().textContent="جارٍ حفظ الدرجة…";
   try{
-    const r=await fetch("/api/results",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({score,total:N(),level:S.level||0,
+    const d=await api("/api/results",{method:"POST",body:JSON.stringify({score,total:N(),level:S.level||0,
         answers:S.order.map((qi,i)=>({q:qi,s:Q[qi].s,d:Q[qi].d,k:Q[qi].k,p:S.picked[i]??null,ok:S.picked[i]===Q[qi].a}))})});
-    S.saved=r.ok;
-    if(r.ok)S.newBadges=(await r.json()).new_achievements||[];
-  }catch(e){S.saved=false;}
-  S.saving=false;
-  const m=document.getElementById("saveMsg");
-  if(m)m.innerHTML=S.saved?`تم حفظ الدرجة في سجلك ✓ · <a href="/profile.html">عرض ملفي وإنجازاتي</a>`:"تعذّر حفظ الدرجة، تحقق من الاتصال.";
-  const nb=document.getElementById("newBadges");
-  if(nb&&S.newBadges.length){
-    nb.innerHTML=`<h3 style="grid-column:1/-1;text-align:center">🏅 إنجازات جديدة!</h3>`+S.newBadges.map(badgeHTML).join("");
-    const xp=S.newBadges.reduce((t,a)=>t+a.xp,0);
-    toast(`<span class="ico">${S.newBadges[0].icon}</span><div><b>${S.newBadges.length>1?`${S.newBadges.length} إنجازات جديدة`:"إنجاز جديد: "+esc(S.newBadges[0].title)}</b><br><small class="dim" dir="ltr">+${xp} XP</small></div>`);
-  }
+    S.saved=true; S.newBadges=d.new_achievements||[];
+    if(m())m().innerHTML=savedHTML();
+    const nb=document.getElementById("newBadges");
+    if(nb)nb.innerHTML=newBadgesHTML();
+    if(S.newBadges.length)achToast(S.newBadges);
+  }catch(e){
+    S.saved=false;
+    // Keep the answers in memory and offer a retry; nothing is lost.
+    if(m()&&e.message!=="401"){m().innerHTML=`${icon("alert",16)} لم تُحفظ الدرجة: ${esc(e.message)} <button class="btn" type="button" id="retrySave">${icon("refresh",16)}<span>أعد الحفظ</span></button>`;
+      document.getElementById("retrySave").onclick=()=>saveResult(score);}
+  }finally{S.saving=false;}
 }
-boot("quiz").then(me=>{if(!S.player)S.player=me.full_name;render();}).catch(()=>{});
+boot("quiz").then(me=>{if(!S.player)S.player=me.full_name;render();}).catch(e=>{if(!["401","students"].includes(e.message))view.innerHTML=errorHTML(e.message),view.querySelector("[data-retry]").onclick=()=>location.reload();});
