@@ -55,6 +55,6 @@ function badgeHTML(a){
     <span class="ico" aria-hidden="true">${a.icon}</span>
     <div style="min-width:0;flex:1"><b>${esc(a.title)}</b><p>${esc(a.desc)}</p>
       ${earned?"":`<div class="bar" title="${a.progress} من ${a.goal}"><i style="width:${Math.round(a.progress/a.goal*100)}%;background:var(--tier)"></i></div>`}
-      <span class="when"><span>${earned?`✓ ${fmtDay(a.earned_at)}`:`${a.progress} / ${a.goal}`}</span><span class="xp" dir="ltr">+${a.xp} XP</span></span>
+      <span class="when"><span>${earned?`✓ ${fmtDay(a.earned_at)}`:`${a.progress} من ${a.goal}`}</span><span class="xp" dir="ltr">+${a.xp} XP</span></span>
     </div></div>`;
 }
