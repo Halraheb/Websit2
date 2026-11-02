@@ -11,7 +11,7 @@ router.post("/results", auth, wrap(async (req, res) => {
     return res.status(400).json({ error: "بيانات الدرجة غير صحيحة" });
   const answers = Array.isArray(req.body.answers) ? req.body.answers.slice(0, total) : [];
   const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
-  const valid = answers.filter((a) => a && int(a.q, 0, 10000) && int(a.s, 1, 3) && int(a.d, 1, 3) && typeof a.k === "string");
+  const valid = answers.filter((a) => a && int(a.q, 0, 10000) && int(a.s, 1, 7) && int(a.d, 1, 3) && typeof a.k === "string");
   const client = await pool.connect();
   let result;
   try {

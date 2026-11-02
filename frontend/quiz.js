@@ -2,7 +2,7 @@ const cur=()=>Q[S.order[S.idx]], N=()=>S.order.length;
 const TEAM_COLORS=["var(--t1)","var(--t2)","var(--t3)","var(--t4)"];
 const DEFAULT_NAMES=["الفريق الأول","الفريق الثاني","الفريق الثالث","الفريق الرابع"];
 
-let S={screen:"setup",mode:"solo",player:"",teamCount:2,count:30,order:[],names:DEFAULT_NAMES.slice(),secs:60,teams:[],idx:0,picked:{},revealed:{},awarded:{},left:60,paused:false};
+let S={screen:"setup",part:"all",mode:"solo",player:"",teamCount:2,count:30,order:[],names:DEFAULT_NAMES.slice(),secs:60,teams:[],idx:0,picked:{},revealed:{},awarded:{},left:60,paused:false};
 let tick=null, audio=null;
 const view=document.getElementById("view"), meta=document.getElementById("meta");
 const ar=n=>String(n);
@@ -28,7 +28,7 @@ function renderSetup(){
   view.innerHTML=`
   <section class="intro">
     <h2>تدرّب على القدرات <em>وارتقِ بمستواك</em></h2>
-    <p>بنك من ${QT} سؤالاً في ثلاثة أقسام: الحساب والجبر، والهندسة والإحصاء، والمقارنة. في الوضع الفردي يجيب الطالب بنفسه، فتظهر النتيجة فوراً وتُحسب درجته تلقائياً. وفي وضع الفرق يدير المعلم الأسئلة ويمنح النقاط.</p>
+    <p>بنك من ${QT} سؤالاً في القسمين الكمي (الحساب والجبر، الهندسة والإحصاء، المقارنة) واللفظي (التناظر، إكمال الجمل، الخطأ السياقي، استيعاب المقروء). في الوضع الفردي يجيب الطالب بنفسه، فتظهر النتيجة فوراً وتُحسب درجته تلقائياً. وفي وضع الفرق يدير المعلم الأسئلة ويمنح النقاط.</p>
     <dl class="credits">
       <dt>مدير المدرسة</dt><dd>رمضان حيدر الرمضان</dd>
       <dt>إعداد</dt><dd>الأستاذ حسن الراهب</dd>
@@ -43,22 +43,25 @@ function renderSetup(){
     <div class="field"><label>عدد الفرق</label>
       <div class="seg" role="group" aria-label="عدد الفرق">${[2,3,4].map(k=>`<button type="button" data-n="${k}" aria-pressed="${k===n}">${ar(k)}</button>`).join("")}</div></div>
     <div class="teamInputs">${Array.from({length:n},(_,i)=>`<div class="ti"><span class="dot" style="background:${TEAM_COLORS[i]}"></span><input id="team${i}" aria-label="اسم الفريق ${i+1}" value="${esc(S.names[i])}"></div>`).join("")}</div>`}
+    <div class="field"><label>القسم</label>
+      <div class="seg" role="group" aria-label="القسم">${["all","q","v"].map(k=>`<button type="button" data-p="${k}" aria-pressed="${k===S.part}">${PARTS[k]} <small style="opacity:.7">(${poolSize(0,k)})</small></button>`).join("")}</div></div>
     <div class="field"><label>عدد الأسئلة (تُسحب عشوائياً)</label>
-      <div class="seg" role="group" aria-label="عدد الأسئلة">${[[30,"30"],[60,"60"],[0,"الكل "+poolSize(S.level||0)]].map(([k,l])=>`<button type="button" data-c="${k}" aria-pressed="${k===S.count}" ${k&&k>poolSize(S.level||0)?"disabled":""}>${l}</button>`).join("")}</div></div>
+      <div class="seg" role="group" aria-label="عدد الأسئلة">${[[30,"30"],[60,"60"],[0,"الكل "+poolSize(S.level||0,S.part)]].map(([k,l])=>`<button type="button" data-c="${k}" aria-pressed="${k===S.count}" ${k&&k>poolSize(S.level||0,S.part)?"disabled":""}>${l}</button>`).join("")}</div></div>
     <div class="field"><label>المستوى</label>
-      <div class="seg" role="group" aria-label="المستوى" style="flex-wrap:wrap">${[1,2,3,0].map(k=>`<button type="button" data-l="${k}" aria-pressed="${k===(S.level||0)}">${k?LEVELS[k]:"الكل"} <small style="opacity:.7">(${poolSize(k)})</small></button>`).join("")}</div></div>
+      <div class="seg" role="group" aria-label="المستوى" style="flex-wrap:wrap">${[1,2,3,0].map(k=>`<button type="button" data-l="${k}" aria-pressed="${k===(S.level||0)}">${k?LEVELS[k]:"الكل"} <small style="opacity:.7">(${poolSize(k,S.part)})</small></button>`).join("")}</div></div>
     <button class="primary" type="submit">ابدأ</button>
   </form>`;
   const saveNames=()=>{const p=document.getElementById("player");if(p)S.player=p.value.trim();
     for(let i=0;i<S.teamCount;i++){const el=document.getElementById("team"+i);if(el)S.names[i]=el.value.trim()||DEFAULT_NAMES[i];}};
   view.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{saveNames();S.count=+b.dataset.c;render();});
-  view.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{saveNames();S.level=+b.dataset.l;if(S.count>poolSize(S.level))S.count=0;render();});
+  view.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{saveNames();S.level=+b.dataset.l;if(S.count>poolSize(S.level,S.part))S.count=0;render();});
+  view.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{saveNames();S.part=b.dataset.p;if(S.count>poolSize(S.level||0,S.part))S.count=0;render();});
   view.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{saveNames();S.mode=b.dataset.m;if(S.mode==="teams"&&S.teamCount<2)S.teamCount=2;render();});
   view.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{saveNames();S.teamCount=+b.dataset.n;render();});
   view.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{saveNames();S.secs=+b.dataset.s;render();});
   document.getElementById("setupForm").onsubmit=e=>{e.preventDefault();saveNames();
     S.teams=S.mode==="solo"?[{name:S.player||"الطالب",score:0}]:Array.from({length:S.teamCount},(_,i)=>({name:S.names[i],score:0}));
-    const all=Q.map((_,i)=>i).filter(i=>!S.level||Q[i].d===S.level);for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[all[i],all[j]]=[all[j],all[i]];}
+    const all=Q.map((_,i)=>i).filter(i=>inPool(Q[i],S.level,S.part));for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[all[i],all[j]]=[all[j],all[i]];}
     S.order=all.slice(0,S.count||all.length);
     S.secs=60;S.idx=0;S.picked={};S.revealed={};S.awarded={};S.saved=false;S.screen="quiz";render();startTimer();updateClock();};
 }
@@ -82,7 +85,7 @@ function renderQuiz(){
   const body=q.s===3
    ?`<div class="qtext">قارن بين القيمتين:</div>${q.g?`<div class="given">المعطيات: ${esc(q.g)}</div>`:""}
      <div class="cmp"><div><span>القيمة الأولى</span><strong>${esc(q.v1)}</strong></div><div><span>القيمة الثانية</span><strong>${esc(q.v2)}</strong></div></div>`
-   :`<div class="qtext">${esc(q.t)}</div>`;
+   :`${q.p?`<div class="passage">${esc(q.p)}</div>`:""}${SECTION_PROMPT[q.s]?`<div class="given">${SECTION_PROMPT[q.s]}</div>`:""}<div class="qtext${q.p?" small":""}">${esc(q.t)}</div>`;
   const aw=S.awarded[S.idx]||[];
   view.innerHTML=`
   <div class="qhead">

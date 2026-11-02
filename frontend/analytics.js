@@ -6,7 +6,7 @@ const STRONG=75, WEAK=60;       // حدود القوة والضعف (%)
 const pctOf=r=>r.answered?Math.round(r.correct/r.answered*100):0;
 const band=p=>p>=STRONG?{c:"var(--right)",t:"قوي",i:"▲"}:p>=WEAK?{c:"var(--saffron)",t:"متوسط",i:"●"}:{c:"var(--wrong)",t:"ضعيف",i:"▼"};
 const escA=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const qText=q=>q.s===3?`قارن: ${q.v1} ↔ ${q.v2}${q.g?` (${q.g})`:""}`:q.t;
+const qText=q=>q.s===3?`قارن: ${q.v1} ↔ ${q.v2}${q.g?` (${q.g})`:""}`:q.s===4?`تناظر: ${q.t}`:q.t;
 const qAnswer=q=>(q.s===3?CMP:q.o)[q.a];
 
 function barRow(label,r,sub){
