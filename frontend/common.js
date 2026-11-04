@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ROLES={student:"طالب",teacher:"معلم",admin:"مدير النظام"};
-const LOCALE="ar-SA-u-nu-arab"; // Hijri dates with Arabic-Indic digits (٠١٢٣…), matching the rest of the site
+const LOCALE="ar-SA-u-nu-latn"; // Hijri dates with Western digits, matching the rest of the site
 const fmtDate=d=>new Date(d).toLocaleString(LOCALE,{dateStyle:"medium",timeStyle:"short"});
 const fmtDay=d=>new Date(d).toLocaleDateString(LOCALE,{dateStyle:"medium"});
 const initials=n=>String(n||"؟").trim().charAt(0);
@@ -160,14 +160,15 @@ function bootError(e){
   v.querySelector("[data-retry]").onclick=()=>location.reload();
 }
 
-// ---------- Arabic-Indic digits: every number shown on screen is written ٠١٢٣٤٥٦٧٨٩ ----------
-// Only visible text is converted (never input values, usernames or data sent to the server).
+// ---------- Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩) inside quiz questions only ----------
+// Question text, comparison values, passages, options and solutions; the rest of the site keeps Western digits.
+const QUESTION_TEXT=".qtext,.given,.cmp,.passage,.opt,.sol";
 const toArabicDigits=s=>s.replace(/[0-9]/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]).replace(/(?<=[٠-٩])\.(?=[٠-٩])/g,"٫").replace(/%/g,"٪");
 const SKIP_DIGITS="SCRIPT,STYLE,TEXTAREA,INPUT,CODE,PRE,KBD";
 function arabizeNode(root){
   const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{
     const el=n.parentElement;
-    if(!el||!/[0-9%]/.test(n.nodeValue)||el.closest(SKIP_DIGITS)||el.closest("[data-latin]"))return NodeFilter.FILTER_REJECT;
+    if(!el||!/[0-9%]/.test(n.nodeValue)||!el.closest(QUESTION_TEXT)||el.closest(SKIP_DIGITS)||el.closest("[data-latin]"))return NodeFilter.FILTER_REJECT;
     return NodeFilter.FILTER_ACCEPT;}});
   const nodes=[];while(walk.nextNode())nodes.push(walk.currentNode);
   nodes.forEach(n=>{const v=toArabicDigits(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v;});
@@ -178,6 +179,5 @@ function startArabicDigits(){
     if(m.type==="characterData")arabizeNode(m.target.parentNode||document.body);
     else m.addedNodes.forEach(n=>n.nodeType===1?arabizeNode(n):n.nodeType===3&&n.parentNode&&arabizeNode(n.parentNode));
   })).observe(document.body,{childList:true,subtree:true,characterData:true});
-  const t=document.title;document.title=toArabicDigits(t);
 }
 document.readyState==="loading"?document.addEventListener("DOMContentLoaded",startArabicDigits):startArabicDigits();
