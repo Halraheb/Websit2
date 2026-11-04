@@ -27,7 +27,7 @@ function heroHTML(p){
   return `<section class="hero" aria-label="بطاقة الطالب">
     <div class="big-avatar" aria-hidden="true">${esc(initials(s.full_name))}</div>
     <div><h1><bdi>${esc(s.full_name)}</bdi></h1>
-      <div class="sub">${[s.stage,s.class_name&&"الصف "+s.class_name].filter(Boolean).map(esc).join(" · ")}${s.stage||s.class_name?" · ":""}<bdi dir="ltr">@${esc(s.username)}</bdi></div>
+      <div class="sub">${[s.stage,s.class_name&&"الصف "+s.class_name].filter(Boolean).map(esc).join(" · ")}${s.stage||s.class_name?" · ":""}<bdi dir="ltr" data-latin>@${esc(s.username)}</bdi></div>
       <div class="sub">عضو منذ ${fmtDay(s.created_at)}</div></div>
     <div class="lvl"><small>المستوى ${L.number}</small><b>${esc(L.title)}</b>
       <div class="bar" role="progressbar" aria-label="التقدم نحو المستوى التالي" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${toNext}"><i style="width:${toNext}%"></i></div>

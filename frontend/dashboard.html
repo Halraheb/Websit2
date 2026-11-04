@@ -144,7 +144,7 @@ async function staffResults(title,sub){
     const q=RQ.q.toLowerCase();
     const rows=results.filter(r=>(!RQ.cls||r.class_name===RQ.cls)&&(!q||r.full_name.toLowerCase().includes(q)||r.username.toLowerCase().includes(q)));
     $("list").innerHTML=statsHTML(rows)+(rows.length?`<div class="tbl"><table><thead><tr><th>الطالب</th><th>الصف</th><th>الدرجة</th><th>النسبة</th><th>${esc(SITE.scopeHeader)}</th><th>التاريخ</th><th><span class="sr">إجراءات</span></th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td><a class="link" href="/profile.html?id=${r.user_id}"><bdi>${esc(r.full_name)}</bdi></a> <small class="dim"><bdi dir="ltr">@${esc(r.username)}</bdi></small></td><td>${esc(r.class_name||"—")}</td>
+      ${rows.map(r=>`<tr><td><a class="link" href="/profile.html?id=${r.user_id}"><bdi>${esc(r.full_name)}</bdi></a> <small class="dim"><bdi dir="ltr" data-latin>@${esc(r.username)}</bdi></small></td><td>${esc(r.class_name||"—")}</td>
        <td>${r.score} من ${r.total}</td><td class="pct">${r.percent}%</td><td>${esc(SITE.scopeLabel(r))}</td><td>${fmtDate(r.created_at)}</td>
        <td><button class="mini danger" data-delres="${r.id}">حذف</button></td></tr>`).join("")}
       </tbody></table></div>`:emptyHTML(`لا نتائج لـ«${RQ.q||RQ.cls}»`,"جرّب اسماً آخر، أو اختر «كل الصفوف»."));
@@ -169,7 +169,7 @@ async function staffUsers(title,sub){
     <div class="field"><label for="u-role">الصلاحية</label><select id="u-role" name="role"><option value="student">طالب</option>${admin?'<option value="teacher">معلم</option><option value="admin">مدير النظام</option>':""}</select></div>
   </div><div class="msg" id="addMsg" role="alert"></div><div class="row"><button class="primary" type="submit" id="addBtn">إضافة المستخدم</button></div></form>
   <div class="tbl"><table><thead><tr><th>الاسم</th><th>المستخدم</th><th>المرحلة</th><th>الصف</th><th>الصلاحية</th><th>الاختبارات</th><th>أفضل نسبة</th><th>الإنجازات</th><th><span class="sr">إجراءات</span></th></tr></thead><tbody>
-  ${users.map(u=>`<tr><td>${u.role==="student"?`<a class="link" href="/profile.html?id=${u.id}"><bdi>${esc(u.full_name)}</bdi></a>`:`<bdi>${esc(u.full_name)}</bdi>`}</td><td><bdi dir="ltr">${esc(u.username)}</bdi></td>
+  ${users.map(u=>`<tr><td>${u.role==="student"?`<a class="link" href="/profile.html?id=${u.id}"><bdi>${esc(u.full_name)}</bdi></a>`:`<bdi>${esc(u.full_name)}</bdi>`}</td><td><bdi dir="ltr" data-latin>${esc(u.username)}</bdi></td>
     <td>${u.role==="student"&&u.id!==ME.id?`<select class="mini" data-stage="${u.id}" aria-label="مرحلة ${esc(u.full_name)}"><option value="">—</option>${STAGES.map(s=>`<option ${s===u.stage?"selected":""}>${s}</option>`).join("")}</select>`:esc(u.stage||"—")}</td><td>${esc(u.class_name||"—")}</td><td>${ROLES[u.role]}</td>
     <td>${u.attempts}</td><td>${u.best==null?"—":u.best+"%"}</td><td>${u.role==="student"?`<span class="status">${icon("trophy",16)}${u.badges}</span>`:"—"}</td>
     <td style="white-space:nowrap">${u.id!==ME.id&&(admin||u.role==="student")?`<button class="mini" data-pw="${u.id}">كلمة المرور</button> <button class="mini danger" data-del="${u.id}">حذف</button>`:""}</td></tr>`).join("")}
