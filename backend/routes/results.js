@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post("/results", auth, wrap(async (req, res) => {
   const total = parseInt(req.body.total, 10), score = parseInt(req.body.score, 10), level = parseInt(req.body.level, 10) || 0;
-  if (!(total > 0 && total <= 500 && score >= 0 && score <= total && level >= 0 && level <= 3))
+  if (!(total > 0 && total <= 2000 && score >= 0 && score <= total && level >= 0 && level <= 3))
     return res.status(400).json({ error: "بيانات الدرجة غير صحيحة" });
   const answers = Array.isArray(req.body.answers) ? req.body.answers.slice(0, total) : [];
   const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

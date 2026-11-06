@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.set("trust proxy", 1);
-app.use(express.json({ limit: "20kb" }));
+app.use(express.json({ limit: "200kb" }));
 
 // The site stays up while the database connects, so a missing/wrong DATABASE_URL shows a clear message instead of a crash loop.
 let dbError = "جارٍ الاتصال بقاعدة البيانات…";
