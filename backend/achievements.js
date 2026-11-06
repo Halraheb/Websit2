@@ -47,7 +47,7 @@ async function userStats(userId) {
   const bySkill = {};
   g.forEach((x) => { const s = (bySkill[x.skill] ||= { n: 0, c: 0 }); s.n += x.n; s.c += x.c; });
   const pct = (x) => Math.round((x.c / x.n) * 100);
-  const sections = [1, 2, 3, 4, 5, 6, 7].map((sec) => sum(g.filter((x) => x.section === sec)));
+  const sections = [1, 2, 3, 4, 5, 6, 7, 8].map((sec) => sum(g.filter((x) => x.section === sec)));
   const totals = sum(g);
   return {
     attempts: r.length,
