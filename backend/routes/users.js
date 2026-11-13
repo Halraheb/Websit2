@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get("/admin/users", auth, staffOnly, wrap(async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT u.id, u.username, u.full_name, u.role, u.class_name, u.stage, u.created_at,
+    SELECT u.id, u.username, u.full_name, u.role, u.class_name, u.stage, u.school, u.created_at,
            COUNT(r.id)::int AS attempts, MAX(r.percent) AS best,
            (SELECT COUNT(*) FROM achievements a WHERE a.user_id = u.id)::int AS badges
     FROM users u LEFT JOIN results r ON r.user_id = u.id
@@ -25,8 +25,8 @@ router.post("/admin/users", auth, staffOnly, wrap(async (req, res) => {
   if (!full_name) return res.status(400).json({ error: "الاسم الكامل مطلوب" });
   if (password.length < 6) return res.status(400).json({ error: "كلمة المرور 6 أحرف على الأقل" });
   const { rows } = await pool.query(
-    "INSERT INTO users (username, full_name, password_hash, role, class_name, stage) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (username) DO NOTHING RETURNING *",
-    [username, full_name, await bcrypt.hash(password, 10), role, String(req.body.class_name || "").trim().slice(0, 40) || null, cleanStage(req.body.stage)]
+    "INSERT INTO users (username, full_name, password_hash, role, class_name, stage, school) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (username) DO NOTHING RETURNING *",
+    [username, full_name, await bcrypt.hash(password, 10), role, String(req.body.class_name || "").trim().slice(0, 40) || null, cleanStage(req.body.stage), String(req.body.school || "").trim().slice(0, 100) || null]
   );
   if (!rows.length) return res.status(409).json({ error: "اسم المستخدم مستخدم من قبل" });
   res.status(201).json({ user: publicUser(rows[0]) });

@@ -9,13 +9,15 @@ router.post("/register", rateLimit, wrap(async (req, res) => {
   const username = cleanUsername(req.body.username);
   const full_name = String(req.body.full_name || "").trim().slice(0, 80);
   const class_name = String(req.body.class_name || "").trim().slice(0, 40) || null;
+  const school = String(req.body.school || "").trim().slice(0, 100);
   const password = String(req.body.password || "");
   if (!USERNAME_RE.test(username)) return res.status(400).json({ error: "اسم المستخدم: 3–32 حرفاً إنجليزياً أو أرقاماً" });
   if (!full_name) return res.status(400).json({ error: "الاسم الكامل مطلوب" });
+  if (!school) return res.status(400).json({ error: "اسم المدرسة مطلوب" });
   if (password.length < 6) return res.status(400).json({ error: "كلمة المرور 6 أحرف على الأقل" });
   const { rows } = await pool.query(
-    "INSERT INTO users (username, full_name, password_hash, class_name, stage) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (username) DO NOTHING RETURNING *",
-    [username, full_name, await bcrypt.hash(password, 10), class_name, cleanStage(req.body.stage)]
+    "INSERT INTO users (username, full_name, password_hash, class_name, stage, school) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (username) DO NOTHING RETURNING *",
+    [username, full_name, await bcrypt.hash(password, 10), class_name, cleanStage(req.body.stage), school]
   );
   if (!rows.length) return res.status(409).json({ error: "اسم المستخدم مستخدم من قبل" });
   setSession(res, rows[0]);

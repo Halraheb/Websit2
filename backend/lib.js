@@ -12,7 +12,7 @@ const STAGES = ["أول ثانوي", "ثاني ثانوي", "ثالث ثانوي
 const cleanStage = (s) => (STAGES.includes(s) ? s : null);
 const cleanUsername = (s) => String(s || "").trim().toLowerCase();
 const USERNAME_RE = /^[a-z0-9_.-]{3,32}$/;
-const publicUser = (u) => ({ id: u.id, username: u.username, full_name: u.full_name, role: u.role, class_name: u.class_name, stage: u.stage, created_at: u.created_at });
+const publicUser = (u) => ({ id: u.id, username: u.username, full_name: u.full_name, role: u.role, class_name: u.class_name, stage: u.stage, school: u.school, created_at: u.created_at });
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
 function setSession(res, user) {

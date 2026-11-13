@@ -33,6 +33,12 @@
         <span class="hint" id="username-hint">حروف إنجليزية أو أرقام، من 3 إلى 32 حرفاً</span>
         <span class="field-err" id="username-err" hidden></span>
       </div>
+      <div class="field" id="schoolNameF" hidden>
+        <label for="school">اسم المدرسة</label>
+        <input id="school" maxlength="100" list="schoolList" placeholder="اكتب اسم مدرستك أو اختره من القائمة" autocomplete="organization" aria-describedby="school-err">
+        <datalist id="schoolList"></datalist>
+        <span class="field-err" id="school-err" hidden></span>
+      </div>
       <div class="grid2" id="schoolF" hidden>
         <div class="field"><label for="stage">المرحلة</label>
           <select id="stage" aria-describedby="stage-err"><option value="">اختر المرحلة</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select>
@@ -58,6 +64,7 @@ let reg=false;
 const home=u=>u.role==="student"?"/":"/dashboard.html";
 document.title=`تسجيل الدخول · ${SITE.name}`;
 $("brand").innerHTML=logoHTML();
+$("schoolList").innerHTML=`<option value="${esc(SITE.school)}">`;
 $("pitchTitle").textContent=SITE.pitchTitle;
 $("pitchText").textContent=SITE.pitch;
 $("feats").innerHTML=SITE.features.map(([ic,t])=>`<li><span>${icon(ic,18)}</span>${esc(t)}</li>`).join("");
@@ -67,6 +74,7 @@ $("foot").innerHTML=SITE.credits.map(([k,v])=>`<span>${esc(k)}: ${esc(v)}</span>
 const RULES={
   full_name:v=>!reg||v.trim()?"":"اكتب اسمك الكامل",
   username:v=>/^[a-z0-9_.-]{3,32}$/i.test(v.trim())?"":"اسم المستخدم من 3 إلى 32 حرفاً إنجليزياً أو رقماً، بلا مسافات",
+  school:v=>!reg||v.trim()?"":"اكتب اسم مدرستك",
   stage:v=>!reg||v?"":"اختر مرحلتك الدراسية",
   password:v=>reg?(v.length>=6?"":"كلمة المرور 6 أحرف على الأقل"):(v?"":"اكتب كلمة المرور"),
 };
@@ -85,19 +93,19 @@ Object.keys(RULES).forEach(id=>{
 function paint(){
   $("ttl").textContent=reg?"إنشاء حساب طالب":"تسجيل الدخول";
   $("go").textContent=reg?"إنشاء الحساب":"دخول";
-  $("nameF").hidden=$("schoolF").hidden=!reg;
+  $("nameF").hidden=$("schoolF").hidden=$("schoolNameF").hidden=!reg;
   $("password").autocomplete=reg?"new-password":"current-password";
   $("sw").innerHTML=reg?'لديك حساب؟ <button type="button">سجّل الدخول</button>':'طالب جديد؟ <button type="button">أنشئ حساباً</button>';
   $("sw").querySelector("button").onclick=()=>{reg=!reg;$("err").textContent="";touched.clear();Object.keys(RULES).forEach(id=>{$(id).removeAttribute("aria-invalid");$(id+"-err").hidden=true;});paint();(reg?$("full_name"):$("username")).focus();};
 }
 $("f").onsubmit=async e=>{
   e.preventDefault();$("err").textContent="";
-  const ids=Object.keys(RULES).filter(id=>reg||!["full_name","stage"].includes(id));
+  const ids=Object.keys(RULES).filter(id=>reg||!["full_name","school","stage"].includes(id));
   ids.forEach(id=>touched.add(id));
   const bad=ids.filter(id=>!check(id));
   if(bad.length){$(bad[0]).focus();return;}
   const body={username:$("username").value.trim(),password:$("password").value};
-  if(reg){body.full_name=$("full_name").value.trim();body.class_name=$("class_name").value.trim();body.stage=$("stage").value;}
+  if(reg){body.full_name=$("full_name").value.trim();body.class_name=$("class_name").value.trim();body.stage=$("stage").value;body.school=$("school").value.trim();}
   await pending($("go"),reg?"جارٍ إنشاء الحساب…":"جارٍ الدخول…",async()=>{
     try{
       const r=await fetch(reg?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
