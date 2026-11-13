@@ -78,14 +78,18 @@ function scoresHTML(){
     </div>`).join("")}</section>`;
 }
 
+// نص السؤال: الأسس (² ³ ¹⁰ و ^س و ^(س + 2)) تُعرض أرقاماً مرفوعة، فيحوّلها common.js إلى أرقام عربية.
+const SUP_MAP={"⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5","⁶":"6","⁷":"7","⁸":"8","⁹":"9","⁻":"−"};
+const qx=v=>esc(v).replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g,m=>`<sup>${[...m].map(c=>SUP_MAP[c]).join("")}</sup>`)
+  .replace(/\^\(([^()]*)\)|\^([^\s()]+)/g,(_,a,b)=>`<sup>${a??b}</sup>`);
 function renderQuiz(){
   view.className="stage";
   const q=cur(), rev=!!S.revealed[S.idx], pick=S.picked[S.idx];
   const opts=q.s===3?CMP:q.o;
   const body=q.s===3
-   ?`<div class="qtext">قارن بين القيمتين:</div>${q.g?`<div class="given">المعطيات: ${esc(q.g)}</div>`:""}
-     <div class="cmp"><div><span>القيمة الأولى</span><strong>${esc(q.v1)}</strong></div><div><span>القيمة الثانية</span><strong>${esc(q.v2)}</strong></div></div>`
-   :`${q.p?`<div class="passage">${esc(q.p)}</div>`:""}${SECTION_PROMPT[q.s]?`<div class="given">${SECTION_PROMPT[q.s]}</div>`:""}<div class="qtext${q.p?" small":""}">${esc(q.t)}</div>`;
+   ?`<div class="qtext">قارن بين القيمتين:</div>${q.g?`<div class="given">المعطيات: ${qx(q.g)}</div>`:""}
+     <div class="cmp"><div><span>القيمة الأولى</span><strong>${qx(q.v1)}</strong></div><div><span>القيمة الثانية</span><strong>${qx(q.v2)}</strong></div></div>`
+   :`${q.p?`<div class="passage">${qx(q.p)}</div>`:""}${SECTION_PROMPT[q.s]?`<div class="given">${SECTION_PROMPT[q.s]}</div>`:""}<div class="qtext${q.p?" small":""}">${qx(q.t)}</div>`;
   const aw=S.awarded[S.idx]||[];
   view.innerHTML=`
   <div class="qhead">
@@ -95,8 +99,8 @@ function renderQuiz(){
   <div class="bar" id="bar"><i style="width:${S.left/S.secs*100}%"></i></div>
   ${body}
   <div class="opts">${opts.map((o,i)=>{let c="";if(rev&&i===q.a)c="right";else if(rev&&i===pick)c="wrong";else if(i===pick)c="picked";
-    return `<button type="button" class="opt ${c}" data-o="${i}" ${rev?"disabled":""}><span class="k">${LETTERS[i]}</span><span>${esc(o)}</span></button>`}).join("")}</div>
-  ${rev?`<div class="sol">${S.mode==="solo"?(pick===q.a?`<b>إجابة صحيحة!</b> `:(pick===undefined?`<b style="color:var(--wrong)">انتهى الوقت.</b> `:`<b style="color:var(--wrong)">إجابة خاطئة.</b> `)):""}<b>الإجابة الصحيحة: ${LETTERS[q.a]}</b> — ${esc(q.sol)}</div>
+    return `<button type="button" class="opt ${c}" data-o="${i}" ${rev?"disabled":""}><span class="k">${LETTERS[i]}</span><span>${qx(o)}</span></button>`}).join("")}</div>
+  ${rev?`<div class="sol">${S.mode==="solo"?(pick===q.a?`<b>إجابة صحيحة!</b> `:(pick===undefined?`<b style="color:var(--wrong)">انتهى الوقت.</b> `:`<b style="color:var(--wrong)">إجابة خاطئة.</b> `)):""}<b>الإجابة الصحيحة: ${LETTERS[q.a]}</b> — ${qx(q.sol)}</div>
     ${S.mode==="solo"?"":`<div class="award"><span>امنح نقطة لـ:</span>${S.teams.map((t,i)=>`<button type="button" data-aw="${i}" style="color:${TEAM_COLORS[i]}" aria-pressed="${aw.includes(i)}"><em>${esc(t.name)}</em></button>`).join("")}</div>`}`:""}
   <div class="controls">
     <div class="grp">

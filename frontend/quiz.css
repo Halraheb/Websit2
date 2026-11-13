@@ -84,3 +84,4 @@ kbd{border:1px solid var(--border);border-radius:4px;padding:0 5px;font-family:i
 .stage .bar i{background:var(--brand);transition:width 1s linear}
 .stage .bar.low i{background:var(--bad)}
 .end .chip{font-size:1rem;padding:4px 14px}
+.qtext sup,.given sup,.cmp sup,.passage sup,.opt sup,.sol sup{font-size:.62em;line-height:0;vertical-align:.9em;margin-inline-start:.05em}
