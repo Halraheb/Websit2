@@ -35,8 +35,7 @@
       </div>
       <div class="field" id="schoolNameF" hidden>
         <label for="school">اسم المدرسة</label>
-        <input id="school" maxlength="100" list="schoolList" placeholder="اكتب اسم مدرستك أو اختره من القائمة" autocomplete="organization" aria-describedby="school-err">
-        <datalist id="schoolList"></datalist>
+        <input id="school" maxlength="100" placeholder="اكتب اسم مدرستك" autocomplete="off" aria-describedby="school-err">
         <span class="field-err" id="school-err" hidden></span>
       </div>
       <div class="grid2" id="schoolF" hidden>
@@ -64,7 +63,6 @@ let reg=false;
 const home=u=>u.role==="student"?"/":"/dashboard.html";
 document.title=`تسجيل الدخول · ${SITE.name}`;
 $("brand").innerHTML=logoHTML();
-$("schoolList").innerHTML=`<option value="${esc(SITE.school)}">`;
 $("pitchTitle").textContent=SITE.pitchTitle;
 $("pitchText").textContent=SITE.pitch;
 $("feats").innerHTML=SITE.features.map(([ic,t])=>`<li><span>${icon(ic,18)}</span>${esc(t)}</li>`).join("");
